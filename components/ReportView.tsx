@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { AnalysisReport, PersonalityTrait } from '../types';
-import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check } from 'lucide-react';
+import { AnalysisReport, PersonalityTrait, ProtocolPlan } from '../types';
+import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check, Calendar, ChevronRight, PlayCircle, Loader2 } from 'lucide-react';
+import { generateActionPlan } from '../services/geminiService';
 
 interface ReportViewProps {
   report: AnalysisReport;
@@ -56,6 +57,23 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
 );
 
 const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
+  const [protocol, setProtocol] = useState<ProtocolPlan | null>(null);
+  const [protocolLoading, setProtocolLoading] = useState(false);
+  const [protocolGoal, setProtocolGoal] = useState("Get a Date");
+
+  const handleGenerateProtocol = async () => {
+    setProtocolLoading(true);
+    try {
+        const plan = await generateActionPlan(report, protocolGoal);
+        setProtocol(plan);
+    } catch (e) {
+        console.error(e);
+        alert("Failed to generate protocol. Please try again.");
+    } finally {
+        setProtocolLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-xl mx-auto pb-40">
       
@@ -158,6 +176,103 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
       <SectionCard title="Winning Trust" icon={<Shield className="fill-amber-400 dark:fill-amber-500" size={20} />} color="text-amber-600" delay="delay-500">
         <p>{report.trustBuilding}</p>
       </SectionCard>
+
+      {/* FEATURE 6: THE DAILY PROTOCOL */}
+      <div className="glass-card p-6 md:p-8 rounded-[2rem] mb-8 animate-slide-up delay-700 border-indigo-100 dark:border-indigo-900/50 shadow-xl shadow-indigo-500/10 relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500"></div>
+        
+        <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h3 className="font-black text-xl md:text-2xl text-gray-900 dark:text-white flex items-center gap-3">
+                        <Calendar className="text-violet-600 dark:text-violet-400" /> 
+                        The Daily Protocol
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Turn insight into action with a 7-day plan.</p>
+                </div>
+                <div className="hidden md:block bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg shadow-violet-500/30">
+                    Premium
+                </div>
+            </div>
+
+            {!protocol && (
+                <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl p-6 border border-gray-100 dark:border-white/5">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Select your Objective</label>
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <select 
+                                value={protocolGoal}
+                                onChange={(e) => setProtocolGoal(e.target.value)}
+                                className="w-full appearance-none p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-gray-800 dark:text-white focus:ring-2 focus:ring-violet-500 outline-none transition-all cursor-pointer hover:border-violet-300"
+                            >
+                                <option value="Get a Date">💘 Get a Date</option>
+                                <option value="Deepen Connection">🤝 Deepen Connection</option>
+                                <option value="Resolve Conflict">🕊️ Resolve Conflict</option>
+                                <option value="Negotiate a Raise/Deal">💼 Negotiate a Raise/Deal</option>
+                                <option value="Recover from a Mistake">🩹 Recover from a Mistake</option>
+                                <option value="Build Trust">🛡️ Build Trust</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <ChevronRight size={16} className="rotate-90" />
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handleGenerateProtocol}
+                            disabled={protocolLoading}
+                            className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed min-w-[180px] flex items-center justify-center gap-2"
+                        >
+                            {protocolLoading ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <PlayCircle size={18} />
+                                    Generate Plan
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {protocol && (
+                <div className="animate-fade-in space-y-4 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-3 py-1 rounded-lg">
+                            Goal: {protocol.goal}
+                        </span>
+                        <button onClick={() => setProtocol(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline">Reset</button>
+                    </div>
+
+                    <div className="grid gap-3">
+                        {protocol.tasks.map((task) => (
+                            <div key={task.day} className="group bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-violet-200 dark:hover:border-violet-800 transition-colors shadow-sm">
+                                <div className="flex gap-4 items-start">
+                                    <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center font-bold text-gray-500 dark:text-gray-300 text-sm group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
+                                        D{task.day}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <h4 className="font-bold text-gray-800 dark:text-white mb-1">{task.focus}</h4>
+                                            {task.day === 1 && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Start Here</span>}
+                                        </div>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2">{task.action}</p>
+                                        <div className="flex items-center gap-2 text-xs text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg inline-flex">
+                                            <Brain size={12} />
+                                            <span className="font-medium">{task.tip}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+      </div>
 
       {/* Floating Chat Button */}
       <div className="fixed bottom-8 right-6 md:right-10 z-50 animate-scale-in delay-700">

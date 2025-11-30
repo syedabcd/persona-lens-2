@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft, Briefcase, Users } from 'lucide-react';
 import { FormData, FileData, AnalysisMode } from '../types';
 
 interface InputSectionProps {
@@ -52,11 +52,13 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
   const handleSubmit = () => {
     if (!formData.relationship || !formData.purpose) {
-      alert("Please fill in Relationship and Purpose fields.");
+      alert("Please fill in required fields.");
       return;
     }
     onAnalyze(formData, files.map(f => f.data), mode);
   };
+
+  const isB2B = mode === AnalysisMode.B2B;
 
   return (
     <div className="w-full max-w-lg mx-auto animate-slide-up">
@@ -72,39 +74,57 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
       <div className="glass-card p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-indigo-500/20 dark:shadow-black/40 relative overflow-hidden transition-colors duration-200 ease-out">
         
-        {/* Decorative background gradients inside card - Removed slow transitions */}
+        {/* Decorative background gradients */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-violet-200/30 dark:bg-violet-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-200/30 dark:bg-indigo-500/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
 
         <div className="relative z-10 mb-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200">New Analysis</h2>
-            <p className="text-gray-400 dark:text-gray-500 text-sm">Provide context for the AI to analyze</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200">
+                {isB2B ? "B2B Segmentation" : "New Analysis"}
+            </h2>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">
+                {isB2B ? "Upload data for multiple clients to cluster them." : "Provide context for the AI to analyze"}
+            </p>
         </div>
 
         {/* Mode Toggle */}
-        <div className="relative z-10 bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-2xl flex mb-8 transition-colors duration-200">
+        <div className="relative z-10 bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-2xl flex mb-8 transition-colors duration-200 overflow-hidden">
             <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-sm transition-all duration-200 ease-out z-0
-                ${mode === AnalysisMode.DEEP ? 'left-1 bg-white dark:bg-slate-700' : 'left-[calc(50%+4px)] bg-white dark:bg-slate-700'}
-                `}
+                className={`absolute top-1 bottom-1 w-[calc(33.33%-2.6px)] rounded-xl shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0
+                ${mode === AnalysisMode.DEEP ? 'left-1 bg-white dark:bg-slate-700' : 
+                  mode === AnalysisMode.FAST ? 'left-[calc(33.33%+1px)] bg-white dark:bg-slate-700' :
+                  'left-[calc(66.66%+1px)] bg-white dark:bg-slate-700'
+                }`}
             ></div>
+            
             <button
             onClick={() => setMode(AnalysisMode.DEEP)}
-            className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors z-10 ${
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
                 mode === AnalysisMode.DEEP ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
             >
-            <Brain size={16} className={mode === AnalysisMode.DEEP ? 'text-violet-500 dark:text-violet-400' : ''} />
-            Deep Analysis
+            <Brain size={14} className={mode === AnalysisMode.DEEP ? 'text-violet-500 dark:text-violet-400' : ''} />
+            Deep
             </button>
+
             <button
             onClick={() => setMode(AnalysisMode.FAST)}
-            className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors z-10 ${
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
                 mode === AnalysisMode.FAST ? 'text-amber-500 dark:text-amber-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
             >
-            <Zap size={16} className={mode === AnalysisMode.FAST ? 'text-amber-500 dark:text-amber-400' : ''} />
-            Fast Check
+            <Zap size={14} className={mode === AnalysisMode.FAST ? 'text-amber-500 dark:text-amber-400' : ''} />
+            Fast
+            </button>
+
+            <button
+            onClick={() => setMode(AnalysisMode.B2B)}
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
+                mode === AnalysisMode.B2B ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+            >
+            <Briefcase size={14} className={mode === AnalysisMode.B2B ? 'text-blue-500 dark:text-blue-400' : ''} />
+            B2B Sales
             </button>
         </div>
 
@@ -112,43 +132,49 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             
             {/* Context Group */}
             <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Target Profile</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    {isB2B ? "Market Context" : "Target Profile"}
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
                     <InputField 
-                        label="Relationship" 
-                        placeholder="Ex, Boss..." 
+                        label={isB2B ? "Industry" : "Relationship"}
+                        placeholder={isB2B ? "Ex, SaaS, Real Estate..." : "Ex, Boss..."}
                         value={formData.relationship}
                         onChange={(v) => setFormData({...formData, relationship: v})}
                     />
                     <InputField 
-                        label="Goal" 
-                        placeholder="Advice needed..." 
+                        label={isB2B ? "Sales Objective" : "Goal"}
+                        placeholder={isB2B ? "Close deals..." : "Advice needed..."}
                         value={formData.purpose}
                         onChange={(v) => setFormData({...formData, purpose: v})}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField 
-                        label="Instagram" 
-                        placeholder="@username" 
-                        value={formData.instagramUsername}
-                        onChange={(v) => setFormData({...formData, instagramUsername: v})}
-                    />
-                    <InputField 
-                        label="TikTok" 
-                        placeholder="@username" 
-                        value={formData.tikTokUsername}
-                        onChange={(v) => setFormData({...formData, tikTokUsername: v})}
-                    />
-                </div>
+                {!isB2B && (
+                    <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                        <InputField 
+                            label="Instagram" 
+                            placeholder="@username" 
+                            value={formData.instagramUsername}
+                            onChange={(v) => setFormData({...formData, instagramUsername: v})}
+                        />
+                        <InputField 
+                            label="TikTok" 
+                            placeholder="@username" 
+                            value={formData.tikTokUsername}
+                            onChange={(v) => setFormData({...formData, tikTokUsername: v})}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Evidence Group */}
             <div className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Evidence</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    {isB2B ? "Client Data Source" : "Evidence"}
+                </h3>
                 <textarea 
                     className="w-full p-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 outline-none text-gray-700 dark:text-gray-200 transition-all duration-200 resize-none h-24 text-sm placeholder:text-gray-400"
-                    placeholder="Paste messages or context here..."
+                    placeholder={isB2B ? "Paste emails, meeting notes, or chat logs from multiple clients..." : "Paste messages or context here..."}
                     value={formData.textContext}
                     onChange={(e) => setFormData({...formData, textContext: e.target.value})}
                 ></textarea>
@@ -169,7 +195,9 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                         <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-indigo-500 dark:text-indigo-400">
                             <Upload size={18} />
                         </div>
-                        <span className="text-sm">Add Screenshots</span>
+                        <span className="text-sm">
+                            {isB2B ? "Upload Client Docs/Screenshots" : "Add Screenshots"}
+                        </span>
                     </label>
                 </div>
 
@@ -199,14 +227,18 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 <>
                     <div className="flex items-center gap-3 z-10">
                         <div className="w-5 h-5 border-2 border-white/20 dark:border-gray-900/20 border-t-white dark:border-t-gray-900 rounded-full animate-spin"></div>
-                        <span className="animate-pulse font-medium text-gray-300 dark:text-gray-500">Analyzing Psyche...</span>
+                        <span className="animate-pulse font-medium text-gray-300 dark:text-gray-500">
+                            {isB2B ? "Segmenting Clients..." : "Analyzing Psyche..."}
+                        </span>
                     </div>
                     {/* Progress bar */}
                     <div className="absolute bottom-0 left-0 h-1 bg-violet-500 animate-[width_2s_ease-in-out_infinite]"></div>
                 </>
                 ) : (
                 <>
-                    <span className="relative z-10">Run Analysis</span>
+                    <span className="relative z-10">
+                        {isB2B ? "Generate Segments" : "Run Analysis"}
+                    </span>
                     <div className="relative z-10 bg-white/20 dark:bg-black/10 p-1 rounded-full">
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </div>

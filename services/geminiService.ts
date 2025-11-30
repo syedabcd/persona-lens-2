@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisReport, AnalysisMode, FileData } from "../types";
+import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport } from "../types";
 
 // Initialize the client
 // The API key is injected via process.env.API_KEY
@@ -34,6 +34,49 @@ const REPORT_SCHEMA: Schema = {
   required: ["summary", "traits", "communicationStrategies", "datingMessage", "redFlags", "greenFlags", "trustBuilding", "psychologicalProfile"]
 };
 
+const PROTOCOL_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    goal: { type: Type.STRING },
+    tasks: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          day: { type: Type.NUMBER },
+          focus: { type: Type.STRING, description: "The thematic focus of the day" },
+          action: { type: Type.STRING, description: "The specific action to take" },
+          tip: { type: Type.STRING, description: "Psychological tip for execution" }
+        }
+      }
+    }
+  },
+  required: ["goal", "tasks"]
+};
+
+const SEGMENTATION_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    overview: { type: Type.STRING, description: "High level summary of the client base analyzed." },
+    groups: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          groupName: { type: Type.STRING, description: "Creative name for this client segment (e.g. 'The Skeptics')" },
+          description: { type: Type.STRING, description: "Who they are and how they think." },
+          buyingTriggers: { type: Type.ARRAY, items: { type: Type.STRING }, description: "What makes them buy." },
+          negotiationStyle: { type: Type.STRING, description: "How they negotiate." },
+          salesStrategy: { type: Type.STRING, description: "Specific tactic to close deals with this group." },
+          clientNames: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of names/identifiers from input that fit this group." }
+        }
+      }
+    },
+    marketTrends: { type: Type.ARRAY, items: { type: Type.STRING }, description: "General patterns observed across all clients." }
+  },
+  required: ["overview", "groups", "marketTrends"]
+};
+
 export const analyzePersona = async (
   context: string,
   files: FileData[],
@@ -43,13 +86,13 @@ export const analyzePersona = async (
   mode: AnalysisMode
 ): Promise<AnalysisReport> => {
   
-  // Correct model names based on SDK guidelines
-  const modelName = mode === AnalysisMode.DEEP 
-    ? "gemini-3-pro-preview" 
-    : "gemini-flash-lite-latest";
+  // Use gemini-2.5-flash for both modes to prevent timeouts with the heavier 3-pro model
+  // This resolves the 500 XHR error by ensuring lower latency responses.
+  const modelName = "gemini-2.5-flash";
 
   // If Deep mode, we use thinking.
-  const thinkingBudget = mode === AnalysisMode.DEEP ? 16384 : 0;
+  // Budget reduced to 10240 to ensure the thinking process completes before browser/proxy timeouts.
+  const thinkingBudget = mode === AnalysisMode.DEEP ? 10240 : 0;
 
   const prompt = `
     Analyze the following person based on the provided text chats, social media context, and screenshots.
@@ -106,6 +149,102 @@ export const analyzePersona = async (
   } catch (error) {
     console.error("Analysis failed:", error);
     throw error;
+  }
+};
+
+export const analyzeClientSegmentation = async (
+  context: string,
+  files: FileData[],
+  industry: string,
+  objective: string
+): Promise<SegmentationReport> => {
+  const modelName = "gemini-2.5-flash";
+  
+  const prompt = `
+    You are an expert sales psychologist and B2B strategist.
+    
+    Context:
+    - Industry: ${industry}
+    - Sales Objective: ${objective}
+    
+    Data Source:
+    The user has provided text/screenshots containing notes, emails, or interactions with multiple potential clients or leads.
+    
+    Task:
+    1. Identify distinct individuals or client entities within the provided data.
+    2. Analyze their language, concerns, and objections.
+    3. Segment them into psychological groups based on their negotiation style and buying triggers.
+    4. Provide actionable sales strategies for each group.
+    
+    Input Data:
+    ${context}
+  `;
+
+  const parts: any[] = [{ text: prompt }];
+  
+  files.forEach(file => {
+    parts.push({
+      inlineData: {
+        mimeType: file.mimeType,
+        data: file.data
+      }
+    });
+  });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: { parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: SEGMENTATION_SCHEMA,
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as SegmentationReport;
+    } else {
+      throw new Error("No response generated.");
+    }
+  } catch (error) {
+    console.error("Segmentation failed:", error);
+    throw error;
+  }
+};
+
+export const generateActionPlan = async (
+  report: AnalysisReport,
+  goal: string
+): Promise<ProtocolPlan> => {
+  const modelName = "gemini-2.5-flash";
+
+  const prompt = `
+    Based on the following psychological analysis of a person, create a 7-day action plan (The Daily Protocol) to achieve the specific goal: "${goal}".
+    
+    Target Profile Summary: ${report.summary}
+    Target Traits: ${report.traits.map(t => `${t.name} (${t.score}/10)`).join(', ')}
+    Communication Style: ${report.communicationStrategies.join('; ')}
+    
+    The plan should be practical, subtle, and psychologically calibrated to this specific person.
+    For each day, provide:
+    - Focus: A 2-3 word theme.
+    - Action: A specific thing to do or say.
+    - Tip: A psychological nuance to keep in mind.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: PROTOCOL_SCHEMA,
+    }
+  });
+
+  if (response.text) {
+    return JSON.parse(response.text) as ProtocolPlan;
+  } else {
+    throw new Error("Failed to generate protocol.");
   }
 };
 

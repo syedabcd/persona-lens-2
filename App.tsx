@@ -3,9 +3,10 @@ import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
 import ReportView from './components/ReportView';
+import SegmentationView from './components/SegmentationView';
 import ChatInterface from './components/ChatInterface';
-import { AnalysisReport, FormData, FileData, AnalysisMode } from './types';
-import { analyzePersona } from './services/geminiService';
+import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport } from './types';
+import { analyzePersona, analyzeClientSegmentation } from './services/geminiService';
 
 type ViewState = 'landing' | 'input' | 'report';
 
@@ -13,7 +14,13 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [view, setView] = useState<ViewState>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // State for single persona report
   const [report, setReport] = useState<AnalysisReport | null>(null);
+  
+  // State for B2B segmentation report
+  const [segmentationReport, setSegmentationReport] = useState<SegmentationReport | null>(null);
+  
   const [isChatOpen, setIsChatOpen] = useState(false);
   
   // Theme Management
@@ -32,23 +39,37 @@ const App: React.FC = () => {
 
   const handleAnalyze = async (data: FormData, files: FileData[], mode: AnalysisMode) => {
     setIsAnalyzing(true);
+    setReport(null);
+    setSegmentationReport(null);
+
     try {
-      const usernames = {
-        tiktok: data.tikTokUsername,
-        instagram: data.instagramUsername,
-        twitter: data.twitterUsername
-      };
+      if (mode === AnalysisMode.B2B) {
+        // Handle B2B Segmentation
+        const result = await analyzeClientSegmentation(
+            data.textContext,
+            files,
+            data.relationship, // repurposed as Industry
+            data.purpose // repurposed as Objective
+        );
+        setSegmentationReport(result);
+      } else {
+        // Handle Standard Analysis
+        const usernames = {
+            tiktok: data.tikTokUsername,
+            instagram: data.instagramUsername,
+            twitter: data.twitterUsername
+        };
+        const result = await analyzePersona(
+            data.textContext, 
+            files, 
+            usernames, 
+            data.relationship, 
+            data.purpose,
+            mode
+        );
+        setReport(result);
+      }
 
-      const result = await analyzePersona(
-        data.textContext, 
-        files, 
-        usernames, 
-        data.relationship, 
-        data.purpose,
-        mode
-      );
-
-      setReport(result);
       setView('report');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
@@ -62,7 +83,7 @@ const App: React.FC = () => {
   const handleNavbarClick = (tab: string) => {
     setActiveTab(tab);
     if (tab === 'home') {
-       if (report) {
+       if (report || segmentationReport) {
          setView('report');
        } else if (view !== 'input') {
          setView('landing'); 
@@ -72,6 +93,7 @@ const App: React.FC = () => {
 
   const resetAnalysis = () => {
     setReport(null);
+    setSegmentationReport(null);
     setView('input');
   };
 
@@ -108,9 +130,9 @@ const App: React.FC = () => {
               />
             )}
 
-            {view === 'report' && report && (
-              <div className="animate-slide-up max-w-2xl mx-auto">
-                 <div className="mb-6 flex items-center justify-between bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-2 rounded-2xl border border-white/50 dark:border-white/10 sticky top-24 z-20 shadow-sm transition-colors duration-200 ease-out">
+            {view === 'report' && (
+              <div className="animate-slide-up max-w-5xl mx-auto">
+                 <div className="mb-6 flex items-center justify-between bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-2 rounded-2xl border border-white/50 dark:border-white/10 sticky top-24 z-20 shadow-sm transition-colors duration-200 ease-out max-w-2xl mx-auto">
                     <button 
                         onClick={resetAnalysis}
                         className="text-gray-600 dark:text-gray-300 text-sm font-medium flex items-center gap-2 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-xl hover:bg-white/80 dark:hover:bg-white/10 transition-all"
@@ -122,7 +144,10 @@ const App: React.FC = () => {
                         Report Ready
                     </span>
                  </div>
-                 <ReportView report={report} onChatClick={() => setIsChatOpen(true)} />
+                 
+                 {report && <ReportView report={report} onChatClick={() => setIsChatOpen(true)} />}
+                 {segmentationReport && <SegmentationView report={segmentationReport} />}
+                 
               </div>
             )}
           </>
@@ -148,7 +173,7 @@ const App: React.FC = () => {
 
       </main>
 
-      {/* Chat Overlay */}
+      {/* Chat Overlay - Only for standard report for now */}
       {isChatOpen && report && (
         <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
       )}

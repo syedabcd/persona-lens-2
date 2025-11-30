@@ -1,6 +1,7 @@
 export enum AnalysisMode {
   FAST = 'FAST',
-  DEEP = 'DEEP'
+  DEEP = 'DEEP',
+  B2B = 'B2B'
 }
 
 export interface PersonalityTrait {
@@ -18,6 +19,21 @@ export interface AnalysisReport {
   greenFlags: string[];
   trustBuilding: string;
   psychologicalProfile: string;
+}
+
+export interface ClientGroup {
+  groupName: string;
+  description: string;
+  buyingTriggers: string[];
+  negotiationStyle: string;
+  salesStrategy: string;
+  clientNames: string[];
+}
+
+export interface SegmentationReport {
+  overview: string;
+  groups: ClientGroup[];
+  marketTrends: string[];
 }
 
 export interface FormData {
@@ -38,4 +54,16 @@ export interface ChatMessage {
 export interface FileData {
   mimeType: string;
   data: string; // Base64
+}
+
+export interface ProtocolTask {
+  day: number;
+  focus: string;
+  action: string;
+  tip: string;
+}
+
+export interface ProtocolPlan {
+  goal: string;
+  tasks: ProtocolTask[];
 }
