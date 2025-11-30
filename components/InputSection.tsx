@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft, Briefcase, Users } from 'lucide-react';
+import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft, Briefcase, Users, HeartHandshake } from 'lucide-react';
 import { FormData, FileData, AnalysisMode } from '../types';
 
 interface InputSectionProps {
@@ -15,7 +15,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     twitterUsername: '',
     relationship: '',
     purpose: '',
-    textContext: ''
+    textContext: '',
+    userContext: ''
   });
   
   const [files, setFiles] = useState<{name: string, data: FileData}[]>([]);
@@ -59,6 +60,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
   };
 
   const isB2B = mode === AnalysisMode.B2B;
+  const isCompat = mode === AnalysisMode.COMPATIBILITY;
 
   return (
     <div className="w-full max-w-lg mx-auto animate-slide-up">
@@ -80,51 +82,62 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
         <div className="relative z-10 mb-6 text-center">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200">
-                {isB2B ? "B2B Segmentation" : "New Analysis"}
+                {isB2B ? "B2B Segmentation" : isCompat ? "Compatibility Check" : "New Analysis"}
             </h2>
             <p className="text-gray-400 dark:text-gray-500 text-sm">
-                {isB2B ? "Upload data for multiple clients to cluster them." : "Provide context for the AI to analyze"}
+                {isB2B ? "Upload data for multiple clients to cluster them." : isCompat ? "Compare your personality with the target." : "Provide context for the AI to analyze"}
             </p>
         </div>
 
         {/* Mode Toggle */}
         <div className="relative z-10 bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-2xl flex mb-8 transition-colors duration-200 overflow-hidden">
             <div 
-                className={`absolute top-1 bottom-1 w-[calc(33.33%-2.6px)] rounded-xl shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0
+                className={`absolute top-1 bottom-1 w-[calc(25%-2px)] rounded-xl shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0
                 ${mode === AnalysisMode.DEEP ? 'left-1 bg-white dark:bg-slate-700' : 
-                  mode === AnalysisMode.FAST ? 'left-[calc(33.33%+1px)] bg-white dark:bg-slate-700' :
-                  'left-[calc(66.66%+1px)] bg-white dark:bg-slate-700'
+                  mode === AnalysisMode.FAST ? 'left-[calc(25%+1px)] bg-white dark:bg-slate-700' :
+                  mode === AnalysisMode.COMPATIBILITY ? 'left-[calc(50%+1px)] bg-white dark:bg-slate-700' :
+                  'left-[calc(75%+1px)] bg-white dark:bg-slate-700'
                 }`}
             ></div>
             
             <button
             onClick={() => setMode(AnalysisMode.DEEP)}
-            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold transition-colors z-10 relative ${
                 mode === AnalysisMode.DEEP ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
             >
             <Brain size={14} className={mode === AnalysisMode.DEEP ? 'text-violet-500 dark:text-violet-400' : ''} />
-            Deep
+            <span className="hidden sm:inline">Deep</span>
             </button>
 
             <button
             onClick={() => setMode(AnalysisMode.FAST)}
-            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold transition-colors z-10 relative ${
                 mode === AnalysisMode.FAST ? 'text-amber-500 dark:text-amber-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
             >
             <Zap size={14} className={mode === AnalysisMode.FAST ? 'text-amber-500 dark:text-amber-400' : ''} />
-            Fast
+            <span className="hidden sm:inline">Fast</span>
+            </button>
+
+            <button
+            onClick={() => setMode(AnalysisMode.COMPATIBILITY)}
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold transition-colors z-10 relative ${
+                mode === AnalysisMode.COMPATIBILITY ? 'text-rose-500 dark:text-rose-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+            >
+            <HeartHandshake size={14} className={mode === AnalysisMode.COMPATIBILITY ? 'text-rose-500 dark:text-rose-400' : ''} />
+            <span className="hidden sm:inline">Match</span>
             </button>
 
             <button
             onClick={() => setMode(AnalysisMode.B2B)}
-            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors z-10 relative ${
+            className={`flex-1 py-3 px-1 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-xs font-bold transition-colors z-10 relative ${
                 mode === AnalysisMode.B2B ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
             >
             <Briefcase size={14} className={mode === AnalysisMode.B2B ? 'text-blue-500 dark:text-blue-400' : ''} />
-            B2B Sales
+            <span className="hidden sm:inline">B2B</span>
             </button>
         </div>
 
@@ -149,7 +162,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                         onChange={(v) => setFormData({...formData, purpose: v})}
                     />
                 </div>
-                {!isB2B && (
+                {!isB2B && !isCompat && (
                     <div className="grid grid-cols-2 gap-4 animate-fade-in">
                         <InputField 
                             label="Instagram" 
@@ -170,7 +183,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             {/* Evidence Group */}
             <div className="space-y-3">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
-                    {isB2B ? "Client Data Source" : "Evidence"}
+                    {isB2B ? "Client Data Source" : isCompat ? "Target Evidence" : "Evidence"}
                 </h3>
                 <textarea 
                     className="w-full p-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 outline-none text-gray-700 dark:text-gray-200 transition-all duration-200 resize-none h-24 text-sm placeholder:text-gray-400"
@@ -178,8 +191,22 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     value={formData.textContext}
                     onChange={(e) => setFormData({...formData, textContext: e.target.value})}
                 ></textarea>
+
+                {isCompat && (
+                    <div className="animate-fade-in">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 mb-3 mt-1">
+                            About You (User Context)
+                        </h3>
+                        <textarea 
+                            className="w-full p-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-rose-100/50 dark:focus:ring-rose-900/30 outline-none text-gray-700 dark:text-gray-200 transition-all duration-200 resize-none h-24 text-sm placeholder:text-gray-400"
+                            placeholder="Describe your personality, communication style, or paste your own typical text messages..."
+                            value={formData.userContext}
+                            onChange={(e) => setFormData({...formData, userContext: e.target.value})}
+                        ></textarea>
+                    </div>
+                )}
                 
-                <div className="relative group">
+                <div className="relative group pt-2">
                     <input 
                         type="file" 
                         id="file-upload" 
@@ -196,7 +223,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                             <Upload size={18} />
                         </div>
                         <span className="text-sm">
-                            {isB2B ? "Upload Client Docs/Screenshots" : "Add Screenshots"}
+                            {isB2B ? "Upload Client Docs" : "Add Screenshots"}
                         </span>
                     </label>
                 </div>
@@ -228,7 +255,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     <div className="flex items-center gap-3 z-10">
                         <div className="w-5 h-5 border-2 border-white/20 dark:border-gray-900/20 border-t-white dark:border-t-gray-900 rounded-full animate-spin"></div>
                         <span className="animate-pulse font-medium text-gray-300 dark:text-gray-500">
-                            {isB2B ? "Segmenting Clients..." : "Analyzing Psyche..."}
+                            {isB2B ? "Segmenting..." : isCompat ? "Calculating Match..." : "Analyzing Psyche..."}
                         </span>
                     </div>
                     {/* Progress bar */}
@@ -237,7 +264,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 ) : (
                 <>
                     <span className="relative z-10">
-                        {isB2B ? "Generate Segments" : "Run Analysis"}
+                        {isB2B ? "Generate Segments" : isCompat ? "Check Compatibility" : "Run Analysis"}
                     </span>
                     <div className="relative z-10 bg-white/20 dark:bg-black/10 p-1 rounded-full">
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnalysisReport, PersonalityTrait, ProtocolPlan } from '../types';
-import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check, Calendar, ChevronRight, PlayCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check, Calendar, ChevronRight, PlayCircle, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import { generateActionPlan } from '../services/geminiService';
 
 interface ReportViewProps {
@@ -121,6 +121,33 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
                 <p className="text-pink-900 dark:text-pink-100 italic relative z-10 text-sm leading-relaxed">{report.datingMessage}</p>
             </div>
         </div>
+      </div>
+
+      {/* FEATURE 2: ASK THE STRATEGIST */}
+      <div 
+        onClick={onChatClick}
+        className="cursor-pointer glass-card p-6 rounded-3xl mb-5 animate-slide-up delay-300 group hover:border-amber-400 dark:hover:border-amber-600 transition-all duration-300 relative overflow-hidden"
+      >
+         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Sparkles size={100} className="text-amber-500" />
+         </div>
+         <div className="flex items-start gap-4 relative z-10">
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30 text-white shrink-0">
+               <MessageSquare size={26} className="fill-white/20" />
+            </div>
+            <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">Ask The Strategist</h3>
+                   <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider">Premium</span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
+                    Need an immediate reply for a text? Ask our context-aware AI strategist for the perfect response draft.
+                </p>
+                <div className="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform">
+                    Open Strategy Chat <ChevronRight size={16} />
+                </div>
+            </div>
+         </div>
       </div>
 
       {/* Psychological Profile */}
@@ -244,53 +271,29 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
                         <span className="text-sm font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-3 py-1 rounded-lg">
                             Goal: {protocol.goal}
                         </span>
-                        <button onClick={() => setProtocol(null)} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline">Reset</button>
                     </div>
 
-                    <div className="grid gap-3">
-                        {protocol.tasks.map((task) => (
-                            <div key={task.day} className="group bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-violet-200 dark:hover:border-violet-800 transition-colors shadow-sm">
-                                <div className="flex gap-4 items-start">
-                                    <div className="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center font-bold text-gray-500 dark:text-gray-300 text-sm group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                                        D{task.day}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-gray-800 dark:text-white mb-1">{task.focus}</h4>
-                                            {task.day === 1 && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Start Here</span>}
-                                        </div>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2">{task.action}</p>
-                                        <div className="flex items-center gap-2 text-xs text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg inline-flex">
-                                            <Brain size={12} />
-                                            <span className="font-medium">{task.tip}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="grid grid-cols-1 gap-3">
+                      {protocol.tasks.map((task, idx) => (
+                        <div key={idx} className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50 flex gap-4 hover:border-violet-200 dark:hover:border-violet-800/50 transition-colors">
+                           <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-sm shrink-0">
+                             {task.day}
+                           </div>
+                           <div className="flex-1">
+                              <h4 className="font-bold text-gray-800 dark:text-white text-sm mb-1">{task.focus}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{task.action}</p>
+                              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                <Sparkles size={12} />
+                                <span>Tip: {task.tip}</span>
+                              </div>
+                           </div>
+                        </div>
+                      ))}
                     </div>
                 </div>
             )}
         </div>
       </div>
-
-      {/* Floating Chat Button */}
-      <div className="fixed bottom-8 right-6 md:right-10 z-50 animate-scale-in delay-700">
-        <button 
-          onClick={onChatClick}
-          className="group relative bg-gray-900 dark:bg-white dark:text-gray-900 text-white p-4 pr-6 pl-4 rounded-full shadow-2xl hover:bg-black dark:hover:bg-gray-200 transition-all hover:scale-[1.05] active:scale-95 flex items-center gap-3"
-        >
-          <div className="absolute inset-0 rounded-full bg-violet-500 opacity-20 animate-pulse"></div>
-          <div className="bg-white/10 dark:bg-black/10 p-2 rounded-full">
-            <MessageCircle size={24} className="text-white dark:text-gray-900" />
-          </div>
-          <div className="text-left">
-             <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Ask AI</div>
-             <div className="text-sm font-bold">Chat Assistant</div>
-          </div>
-        </button>
-      </div>
-
     </div>
   );
 };

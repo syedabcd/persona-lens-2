@@ -1,7 +1,8 @@
 export enum AnalysisMode {
   FAST = 'FAST',
   DEEP = 'DEEP',
-  B2B = 'B2B'
+  B2B = 'B2B',
+  COMPATIBILITY = 'COMPATIBILITY'
 }
 
 export interface PersonalityTrait {
@@ -36,6 +37,15 @@ export interface SegmentationReport {
   marketTrends: string[];
 }
 
+export interface CompatibilityReport {
+  overallScore: number; // 0-100
+  scoreLabel: string; // e.g., "High Voltage", "Toxic Match"
+  synergy: string[];
+  conflicts: string[];
+  longTermPrediction: string;
+  advice: string;
+}
+
 export interface FormData {
   tikTokUsername: string;
   instagramUsername: string;
@@ -43,6 +53,7 @@ export interface FormData {
   relationship: string;
   purpose: string; // e.g., Dating, Friendship, Business
   textContext: string;
+  userContext?: string; // For compatibility mode
 }
 
 export interface ChatMessage {

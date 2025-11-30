@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport } from "../types";
+import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport, CompatibilityReport } from "../types";
 
 // Initialize the client
 // The API key is injected via process.env.API_KEY
@@ -75,6 +75,19 @@ const SEGMENTATION_SCHEMA: Schema = {
     marketTrends: { type: Type.ARRAY, items: { type: Type.STRING }, description: "General patterns observed across all clients." }
   },
   required: ["overview", "groups", "marketTrends"]
+};
+
+const COMPATIBILITY_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    overallScore: { type: Type.NUMBER, description: "Compatibility score from 0 to 100" },
+    scoreLabel: { type: Type.STRING, description: "A creative 2-3 word label for this match (e.g. 'Volatile Genius', 'Soulmates')" },
+    synergy: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of areas where the two personalities align well." },
+    conflicts: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of potential friction points." },
+    longTermPrediction: { type: Type.STRING, description: "Prediction of how the relationship evolves over time." },
+    advice: { type: Type.STRING, description: "Strategic advice to make it work." }
+  },
+  required: ["overallScore", "scoreLabel", "synergy", "conflicts", "longTermPrediction", "advice"]
 };
 
 export const analyzePersona = async (
@@ -212,6 +225,62 @@ export const analyzeClientSegmentation = async (
   }
 };
 
+export const analyzeCompatibility = async (
+  targetData: string,
+  userData: string,
+  files: FileData[],
+  relationshipType: string
+): Promise<CompatibilityReport> => {
+  const modelName = "gemini-2.5-flash";
+  
+  const prompt = `
+    You are a relationship psychologist and compatibility expert.
+    
+    Task:
+    Compare the personality of "The User" (Person A) with "The Target" (Person B) based on the provided data.
+    Determine their compatibility score, synergy areas, and friction points.
+    
+    User Context (Person A - The User):
+    ${userData}
+    
+    Target Context (Person B - The Target):
+    ${targetData}
+    
+    Relationship Type: ${relationshipType}
+  `;
+
+  const parts: any[] = [{ text: prompt }];
+  
+  files.forEach(file => {
+    parts.push({
+      inlineData: {
+        mimeType: file.mimeType,
+        data: file.data
+      }
+    });
+  });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: { parts },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: COMPATIBILITY_SCHEMA,
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as CompatibilityReport;
+    } else {
+      throw new Error("No response generated.");
+    }
+  } catch (error) {
+    console.error("Compatibility Analysis failed:", error);
+    throw error;
+  }
+};
+
 export const generateActionPlan = async (
   report: AnalysisReport,
   goal: string
@@ -251,20 +320,27 @@ export const generateActionPlan = async (
 export const chatWithPersonaBot = async (
   history: { role: string; text: string }[],
   newMessage: string,
-  reportContext: AnalysisReport
+  reportContext: AnalysisReport | null
 ) => {
   
   // We use Flash for the chat for speed
   const model = "gemini-2.5-flash";
 
+  const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
+
   const systemInstruction = `
-    You are 'PersonaLens AI', a psychological assistant. 
-    You have just analyzed a person with the following profile:
-    ${JSON.stringify(reportContext)}
+    You are 'The Strategist', an elite communication expert and conflict negotiator.
     
-    The user is asking follow-up questions about this report and how to interact with the target person.
-    Answer based on the report data. Be helpful, empathetic, but realistic.
-    Keep answers concise unless asked for detail.
+    Target Profile Context:
+    ${contextStr}
+    
+    Your Goal: Provide real-time, high-stakes tactical advice to the user.
+    - Do not be generic. Be precise, strategic, and Machiavellian if necessary (but ethical).
+    - If the user asks what to say, draft specific messages.
+    - If the user asks about a behavior, explain the hidden psychological motive.
+    - Keep responses concise, actionable, and confident.
+    
+    The user is treating you as a high-end consultant for this relationship.
   `;
 
   const chat = ai.chats.create({

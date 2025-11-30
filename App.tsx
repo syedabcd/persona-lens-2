@@ -4,9 +4,10 @@ import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
 import ReportView from './components/ReportView';
 import SegmentationView from './components/SegmentationView';
+import CompatibilityView from './components/CompatibilityView';
 import ChatInterface from './components/ChatInterface';
-import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport } from './types';
-import { analyzePersona, analyzeClientSegmentation } from './services/geminiService';
+import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport } from './types';
+import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 
 type ViewState = 'landing' | 'input' | 'report';
 
@@ -15,11 +16,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  // State for single persona report
+  // State for reports
   const [report, setReport] = useState<AnalysisReport | null>(null);
-  
-  // State for B2B segmentation report
   const [segmentationReport, setSegmentationReport] = useState<SegmentationReport | null>(null);
+  const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport | null>(null);
   
   const [isChatOpen, setIsChatOpen] = useState(false);
   
@@ -41,10 +41,10 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setReport(null);
     setSegmentationReport(null);
+    setCompatibilityReport(null);
 
     try {
       if (mode === AnalysisMode.B2B) {
-        // Handle B2B Segmentation
         const result = await analyzeClientSegmentation(
             data.textContext,
             files,
@@ -52,6 +52,14 @@ const App: React.FC = () => {
             data.purpose // repurposed as Objective
         );
         setSegmentationReport(result);
+      } else if (mode === AnalysisMode.COMPATIBILITY) {
+        const result = await analyzeCompatibility(
+            data.textContext, // Target Data
+            data.userContext || '', // User Data
+            files,
+            data.relationship
+        );
+        setCompatibilityReport(result);
       } else {
         // Handle Standard Analysis
         const usernames = {
@@ -83,7 +91,7 @@ const App: React.FC = () => {
   const handleNavbarClick = (tab: string) => {
     setActiveTab(tab);
     if (tab === 'home') {
-       if (report || segmentationReport) {
+       if (report || segmentationReport || compatibilityReport) {
          setView('report');
        } else if (view !== 'input') {
          setView('landing'); 
@@ -94,6 +102,7 @@ const App: React.FC = () => {
   const resetAnalysis = () => {
     setReport(null);
     setSegmentationReport(null);
+    setCompatibilityReport(null);
     setView('input');
   };
 
@@ -147,6 +156,7 @@ const App: React.FC = () => {
                  
                  {report && <ReportView report={report} onChatClick={() => setIsChatOpen(true)} />}
                  {segmentationReport && <SegmentationView report={segmentationReport} />}
+                 {compatibilityReport && <CompatibilityView report={compatibilityReport} />}
                  
               </div>
             )}
