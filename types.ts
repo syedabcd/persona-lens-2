@@ -50,10 +50,15 @@ export interface FormData {
   tikTokUsername: string;
   instagramUsername: string;
   twitterUsername: string;
+  facebookUsername: string;
+  threadsUsername: string;
+  snapchatUsername: string;
   relationship: string;
   purpose: string; // e.g., Dating, Friendship, Business
   textContext: string;
   userContext?: string; // For compatibility mode
+  uploadedContent: string; // Content from text files
+  scrapedContent?: string; // Content from social media scraping
 }
 
 export interface ChatMessage {
@@ -77,4 +82,32 @@ export interface ProtocolTask {
 export interface ProtocolPlan {
   goal: string;
   tasks: ProtocolTask[];
+}
+
+export interface SimulationFeedback {
+  score: number; // 0-100
+  outcome: string; // "Success", "Failure", "Stalemate"
+  strengths: string[];
+  weaknesses: string[];
+  tacticalAdvice: string;
+}
+
+export interface MonitoredProfile {
+  id: string;
+  name: string;
+  status: string;
+  lastScan: string;
+  changeDetected: boolean;
+}
+
+export type ScrapeStatus = 'pending' | 'loading' | 'success' | 'skipped' | 'no_content' | 'error';
+
+export interface PlatformResult {
+  platform: string;
+  username: string;
+  status: ScrapeStatus;
+  text: string;
+  chars: number;
+  error?: string;
+  httpStatus?: number;
 }

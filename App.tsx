@@ -6,10 +6,12 @@ import ReportView from './components/ReportView';
 import SegmentationView from './components/SegmentationView';
 import CompatibilityView from './components/CompatibilityView';
 import ChatInterface from './components/ChatInterface';
-import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport } from './types';
+import MonitoringView from './components/MonitoringView';
+import SimulatorInterface from './components/SimulatorInterface';
+import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 
-type ViewState = 'landing' | 'input' | 'report';
+type ViewState = 'landing' | 'input' | 'report' | 'monitoring';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -22,7 +24,11 @@ const App: React.FC = () => {
   const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport | null>(null);
   
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   
+  // Monitoring State
+  const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
+
   // Theme Management
   const [isDark, setIsDark] = useState(false);
 
@@ -46,7 +52,7 @@ const App: React.FC = () => {
     try {
       if (mode === AnalysisMode.B2B) {
         const result = await analyzeClientSegmentation(
-            data.textContext,
+            data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""),
             files,
             data.relationship, // repurposed as Industry
             data.purpose // repurposed as Objective
@@ -54,26 +60,24 @@ const App: React.FC = () => {
         setSegmentationReport(result);
       } else if (mode === AnalysisMode.COMPATIBILITY) {
         const result = await analyzeCompatibility(
-            data.textContext, // Target Data
+            data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""), // Target Data
             data.userContext || '', // User Data
             files,
             data.relationship
         );
         setCompatibilityReport(result);
       } else {
-        // Handle Standard Analysis
-        const usernames = {
-            tiktok: data.tikTokUsername,
-            instagram: data.instagramUsername,
-            twitter: data.twitterUsername
-        };
+        // Standard Analysis
+        // Note: Scraping is now handled within InputSection before this is called
+        // We just pass the aggregated scrapedContent to the analysis service
         const result = await analyzePersona(
             data.textContext, 
             files, 
-            usernames, 
             data.relationship, 
             data.purpose,
-            mode
+            mode,
+            data.uploadedContent,
+            data.scrapedContent // New field populated by InputSection
         );
         setReport(result);
       }
@@ -96,6 +100,8 @@ const App: React.FC = () => {
        } else if (view !== 'input') {
          setView('landing'); 
        }
+    } else if (tab === 'monitoring') {
+        setView('monitoring');
     }
   };
 
@@ -104,6 +110,22 @@ const App: React.FC = () => {
     setSegmentationReport(null);
     setCompatibilityReport(null);
     setView('input');
+    setActiveTab('home');
+  };
+
+  const addToMonitoring = () => {
+    if (report) {
+        const newProfile: MonitoredProfile = {
+            id: Date.now().toString(),
+            name: "Unknown Target", // In a real app we'd ask for a name
+            status: 'Stable',
+            lastScan: 'Just now',
+            changeDetected: false
+        };
+        setMonitoredProfiles(prev => [newProfile, ...prev]);
+        setActiveTab('monitoring');
+        setView('monitoring');
+    }
   };
 
   return (
@@ -125,7 +147,8 @@ const App: React.FC = () => {
       
       <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-10">
         
-        {activeTab === 'home' && (
+        {/* VIEW: LANDING & INPUT */}
+        {(view === 'landing' || view === 'input') && activeTab === 'home' && (
           <>
             {view === 'landing' && (
               <LandingPage onGetStarted={() => setView('input')} />
@@ -138,8 +161,11 @@ const App: React.FC = () => {
                 onBack={() => setView('landing')}
               />
             )}
+          </>
+        )}
 
-            {view === 'report' && (
+        {/* VIEW: REPORTS */}
+        {view === 'report' && activeTab === 'home' && (
               <div className="animate-slide-up max-w-5xl mx-auto">
                  <div className="mb-6 flex items-center justify-between bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-2 rounded-2xl border border-white/50 dark:border-white/10 sticky top-24 z-20 shadow-sm transition-colors duration-200 ease-out max-w-2xl mx-auto">
                     <button 
@@ -154,15 +180,26 @@ const App: React.FC = () => {
                     </span>
                  </div>
                  
-                 {report && <ReportView report={report} onChatClick={() => setIsChatOpen(true)} />}
+                 {report && (
+                    <ReportView 
+                        report={report} 
+                        onChatClick={() => setIsChatOpen(true)} 
+                        onSimulateClick={() => setIsSimulatorOpen(true)}
+                        onVigilanceClick={addToMonitoring}
+                    />
+                 )}
                  {segmentationReport && <SegmentationView report={segmentationReport} />}
                  {compatibilityReport && <CompatibilityView report={compatibilityReport} />}
                  
               </div>
-            )}
-          </>
         )}
 
+        {/* VIEW: MONITORING */}
+        {view === 'monitoring' && (
+            <MonitoringView profiles={monitoredProfiles} />
+        )}
+
+        {/* VIEW: HISTORY (Placeholder) */}
         {activeTab === 'history' && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up">
              <div className="glass-card p-10 rounded-[2rem] text-center max-w-sm mx-auto shadow-xl shadow-indigo-500/10 dark:shadow-black/30">
@@ -172,7 +209,7 @@ const App: React.FC = () => {
                 <h3 className="font-bold text-xl text-gray-800 dark:text-white mb-2">History Vault</h3>
                 <p className="text-gray-400 dark:text-gray-400 leading-relaxed mb-4">Your previous analyses are encrypted and stored locally. Feature coming in the next update.</p>
                 <button 
-                  onClick={() => setActiveTab('home')}
+                  onClick={() => { setActiveTab('home'); setView('landing'); }}
                   className="text-violet-600 dark:text-violet-400 font-bold text-sm hover:underline"
                 >
                   Go back to Analyze
@@ -183,9 +220,14 @@ const App: React.FC = () => {
 
       </main>
 
-      {/* Chat Overlay - Only for standard report for now */}
+      {/* Chat Overlay */}
       {isChatOpen && report && (
         <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
+      )}
+
+      {/* Simulator Overlay */}
+      {isSimulatorOpen && report && (
+        <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
       )}
     </div>
   );

@@ -1,8 +1,7 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport, CompatibilityReport } from "../types";
+import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport, CompatibilityReport, SimulationFeedback } from "../types";
 
 // Initialize the client
-// The API key is injected via process.env.API_KEY
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const REPORT_SCHEMA: Schema = {
@@ -90,35 +89,55 @@ const COMPATIBILITY_SCHEMA: Schema = {
   required: ["overallScore", "scoreLabel", "synergy", "conflicts", "longTermPrediction", "advice"]
 };
 
+const SIMULATION_FEEDBACK_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    score: { type: Type.NUMBER, description: "Score from 0-100 based on how well the user achieved the goal" },
+    outcome: { type: Type.STRING, description: "One word: Success, Failure, or Stalemate" },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "What the user did well" },
+    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "What the user did poorly" },
+    tacticalAdvice: { type: Type.STRING, description: "Specific advice for next time" }
+  },
+  required: ["score", "outcome", "strengths", "weaknesses", "tacticalAdvice"]
+};
+
+// --- MAIN ANALYSIS FUNCTIONS ---
+
 export const analyzePersona = async (
-  context: string,
-  files: FileData[],
-  usernames: Record<string, string>,
+  context: string, // Manual text context
+  files: FileData[], // Images (Screenshots)
   relationship: string,
   purpose: string,
-  mode: AnalysisMode
+  mode: AnalysisMode,
+  uploadedContent: string = "", 
+  scrapedContent: string = "" // Now passed in from the UI scraping process
 ): Promise<AnalysisReport> => {
   
-  // Use gemini-2.5-flash for both modes to prevent timeouts with the heavier 3-pro model
-  // This resolves the 500 XHR error by ensuring lower latency responses.
-  const modelName = "gemini-2.5-flash";
+  // 7) Aggregation logic: Combine all sources
+  const fullContext = `
+    --- SOCIAL MEDIA SCRAPED DATA ---
+    ${scrapedContent}
+    
+    --- UPLOADED TEXT FILES / CHAT LOGS ---
+    ${uploadedContent}
 
-  // If Deep mode, we use thinking.
-  // Budget reduced to 10240 to ensure the thinking process completes before browser/proxy timeouts.
+    --- MANUAL USER CONTEXT ---
+    ${context}
+  `;
+
+  // Default to Flash for speed and reliability unless in DEEP mode
+  const modelName = "gemini-2.5-flash";
   const thinkingBudget = mode === AnalysisMode.DEEP ? 10240 : 0;
 
   const prompt = `
-    Analyze the following person based on the provided text chats, social media context, and screenshots.
+    Analyze the following person based on the provided aggregated data (social media scrapes, chat logs, screenshots, and notes).
     
     Context:
     - Relationship to User: ${relationship}
     - User's Purpose: ${purpose}
-    - Instagram: ${usernames.instagram || 'N/A'}
-    - TikTok: ${usernames.tiktok || 'N/A'}
-    - Twitter: ${usernames.twitter || 'N/A'}
     
-    Additional Text Context:
-    ${context}
+    Data Source:
+    ${fullContext}
 
     Task:
     Provide a psychological analysis. Identify personality traits (Big 5), communication style, red/green flags, and specific advice on how to interact with them for the stated purpose.
@@ -142,7 +161,6 @@ export const analyzePersona = async (
     responseSchema: REPORT_SCHEMA,
   };
 
-  // Add thinking config only if budget > 0
   if (thinkingBudget > 0) {
     config.thinkingConfig = { thinkingBudget };
   }
@@ -322,10 +340,7 @@ export const chatWithPersonaBot = async (
   newMessage: string,
   reportContext: AnalysisReport | null
 ) => {
-  
-  // We use Flash for the chat for speed
   const model = "gemini-2.5-flash";
-
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
   const systemInstruction = `
@@ -348,7 +363,6 @@ export const chatWithPersonaBot = async (
     config: {
       systemInstruction,
     },
-    // Map history to the correct format: { role, parts: [{ text }] }
     history: history.map(h => ({
       role: h.role,
       parts: [{ text: h.text }]
@@ -357,4 +371,81 @@ export const chatWithPersonaBot = async (
 
   const result = await chat.sendMessageStream({ message: newMessage });
   return result;
+};
+
+export const createSimulationChat = (
+  reportContext: AnalysisReport,
+  goal: string
+) => {
+  const model = "gemini-2.5-flash";
+  const contextStr = JSON.stringify(reportContext);
+
+  const systemInstruction = `
+    ROLEPLAY SIMULATION ACTIVATED.
+    
+    You are NOT an AI assistant. You are now roleplaying as the Target Person described in the profile below.
+    
+    Target Profile:
+    ${contextStr}
+    
+    User's Goal in this conversation: "${goal}"
+    
+    INSTRUCTIONS:
+    1. Stay completely in character. Adopt their tone, vocabulary, and defense mechanisms.
+    2. If the profile is "Avoidant", be evasive. If "Aggressive", be confrontational. If "Analytical", be cold and logical.
+    3. React naturally to the user. If they say something that would trigger a red flag for this specific personality, react negatively.
+    4. Do not break character. Do not offer advice. Just BE the person.
+    5. Keep responses relatively short, like a real chat or spoken conversation.
+  `;
+
+  return ai.chats.create({
+    model: model,
+    config: {
+      systemInstruction,
+    },
+    history: []
+  });
+};
+
+export const evaluateSimulation = async (
+  history: { role: string; text: string }[],
+  goal: string,
+  reportContext: AnalysisReport
+): Promise<SimulationFeedback> => {
+  const modelName = "gemini-2.5-flash";
+
+  const prompt = `
+    Analyze the following roleplay transcript between the User and the Target.
+    
+    User's Goal: "${goal}"
+    
+    Target Profile Used: ${JSON.stringify(reportContext.summary)}
+    Target Traits: ${reportContext.traits.map(t => t.name).join(', ')}
+    
+    Transcript:
+    ${history.map(h => `${h.role === 'user' ? 'User' : 'Target'}: ${h.text}`).join('\n')}
+    
+    Task:
+    Evaluate the User's performance.
+    1. Did they achieve their goal?
+    2. Did they navigate the Target's personality traits effectively?
+    3. Did they trigger any psychological defense mechanisms?
+    
+    Provide a score (0-100), outcome, strengths, weaknesses, and tactical advice.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: SIMULATION_FEEDBACK_SCHEMA,
+    }
+  });
+
+  if (response.text) {
+    return JSON.parse(response.text) as SimulationFeedback;
+  } else {
+    throw new Error("Failed to evaluate simulation.");
+  }
 };

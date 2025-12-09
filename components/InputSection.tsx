@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft, Briefcase, Users, HeartHandshake } from 'lucide-react';
-import { FormData, FileData, AnalysisMode } from '../types';
+import { Upload, Sparkles, Zap, Brain, X, Check, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, AlertTriangle, AlertCircle, Terminal, Play } from 'lucide-react';
+import { FormData, FileData, AnalysisMode, PlatformResult, ScrapeStatus } from '../types';
+import { scrapeSocialProfile, runTestHarness } from '../services/scrapingService';
 
 interface InputSectionProps {
   onAnalyze: (data: FormData, files: FileData[], mode: AnalysisMode) => void;
@@ -8,62 +9,202 @@ interface InputSectionProps {
   onBack: () => void;
 }
 
+// 8) UI status updates: Icons helper
+const StatusIcon = ({ status, error }: { status: ScrapeStatus, error?: string }) => {
+    switch (status) {
+        case 'loading': return <Loader2 size={16} className="text-violet-500 animate-spin" />;
+        case 'success': return <Check size={16} className="text-emerald-500" strokeWidth={3} />;
+        case 'skipped': return <span className="text-gray-300 text-xs font-mono">-</span>;
+        case 'no_content': return (
+            <div className="group relative">
+                <AlertTriangle size={16} className="text-amber-500 cursor-help" />
+                <span className="absolute bottom-full right-0 mb-2 w-48 text-[10px] bg-amber-100 text-amber-800 p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    No public text found. {error}
+                </span>
+            </div>
+        );
+        case 'error': return (
+            <div className="group relative">
+                <AlertCircle size={16} className="text-rose-500 cursor-help" />
+                <span className="absolute bottom-full right-0 mb-2 w-48 text-[10px] bg-rose-100 text-rose-800 p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    {error || "Failed"}
+                </span>
+            </div>
+        );
+        default: return null;
+    }
+};
+
 const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onBack }) => {
   const [formData, setFormData] = useState<FormData>({
     tikTokUsername: '',
     instagramUsername: '',
     twitterUsername: '',
+    facebookUsername: '',
+    threadsUsername: '',
+    snapchatUsername: '',
     relationship: '',
     purpose: '',
     textContext: '',
-    userContext: ''
+    userContext: '',
+    uploadedContent: '',
+    scrapedContent: ''
   });
   
-  const [files, setFiles] = useState<{name: string, data: FileData}[]>([]);
+  const [imageFiles, setImageFiles] = useState<{name: string, data: FileData}[]>([]);
+  const [textFilesMeta, setTextFilesMeta] = useState<{name: string}[]>([]);
   const [mode, setMode] = useState<AnalysisMode>(AnalysisMode.DEEP);
+
+  // Scraper State
+  const [scrapeStatuses, setScrapeStatuses] = useState<Record<string, PlatformResult>>({});
+  const [isScraping, setIsScraping] = useState(false);
+  const [showDebug, setShowDebug] = useState(false); // 10) Developer debug mode
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles: {name: string, data: FileData}[] = [];
-      for (let i = 0; i < e.target.files.length; i++) {
-        const file = e.target.files[i];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          const base64Data = base64String.split(',')[1];
-          newFiles.push({
-            name: file.name,
-            data: {
-              mimeType: file.type,
-              data: base64Data
-            }
-          });
-          if (newFiles.length === e.target.files!.length) {
-            setFiles(prev => [...prev, ...newFiles]);
+      const newImages: {name: string, data: FileData}[] = [];
+      const newTextFiles: {name: string}[] = [];
+      let newTextContent = "";
+
+      const processFile = (file: File): Promise<void> => {
+        return new Promise((resolve) => {
+          if (file.type === "text/plain" || file.name.endsWith('.txt')) {
+             const reader = new FileReader();
+             reader.onload = (event) => {
+                 const text = event.target?.result as string;
+                 newTextContent += `\n--- START OF FILE: ${file.name} ---\n${text}\n--- END OF FILE ---\n`;
+                 newTextFiles.push({ name: file.name });
+                 resolve();
+             };
+             reader.readAsText(file);
+          } 
+          else if (file.type.startsWith("image/")) {
+             const reader = new FileReader();
+             reader.onloadend = () => {
+                const base64String = reader.result as string;
+                const base64Data = base64String.split(',')[1];
+                newImages.push({
+                    name: file.name,
+                    data: {
+                        mimeType: file.type,
+                        data: base64Data
+                    }
+                });
+                resolve();
+             };
+             reader.readAsDataURL(file);
+          } else {
+             resolve();
           }
-        };
-        reader.readAsDataURL(file);
+        });
+      };
+
+      for (let i = 0; i < e.target.files.length; i++) {
+        await processFile(e.target.files[i]);
       }
+
+      setImageFiles(prev => [...prev, ...newImages]);
+      setTextFilesMeta(prev => [...prev, ...newTextFiles]);
+      setFormData(prev => ({
+        ...prev,
+        uploadedContent: prev.uploadedContent + newTextContent
+      }));
     }
   };
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeImage = (index: number) => setImageFiles(prev => prev.filter((_, i) => i !== index));
+  const removeTextFile = (index: number) => setTextFilesMeta(prev => prev.filter((_, i) => i !== index));
 
-  const handleSubmit = () => {
+  const handleRunAnalysis = async () => {
     if (!formData.relationship || !formData.purpose) {
-      alert("Please fill in required fields.");
+      alert("Please fill in required fields (Relationship & Purpose).");
       return;
     }
-    onAnalyze(formData, files.map(f => f.data), mode);
+
+    if (mode === AnalysisMode.B2B || mode === AnalysisMode.COMPATIBILITY) {
+        // Skip scraping for B2B/Compat for now as per requirements focus
+        onAnalyze(formData, imageFiles.map(f => f.data), mode);
+        return;
+    }
+
+    // Start Scraping Process
+    setIsScraping(true);
+    setScrapeStatuses({}); // Reset statuses
+
+    const platforms = [
+        { key: 'instagram', username: formData.instagramUsername },
+        { key: 'twitter', username: formData.twitterUsername },
+        { key: 'threads', username: formData.threadsUsername },
+        { key: 'tiktok', username: formData.tikTokUsername },
+        { key: 'facebook', username: formData.facebookUsername },
+        { key: 'snapchat', username: formData.snapchatUsername },
+    ];
+
+    // 7) Aggregation & order: Prepare to collect results
+    // We execute in parallel for speed, but will reorder text later
+    const scrapePromises = platforms.map(async (p) => {
+        if (!p.username) {
+             setScrapeStatuses(prev => ({...prev, [p.key]: { platform: p.key, username: '', status: 'skipped', text: '', chars: 0 }}));
+             return null;
+        }
+
+        // Set pending/loading UI
+        setScrapeStatuses(prev => ({...prev, [p.key]: { platform: p.key, username: p.username, status: 'loading', text: '', chars: 0 }}));
+
+        // Call Service
+        const result = await scrapeSocialProfile(p.key, p.username);
+        
+        // Update UI with result
+        setScrapeStatuses(prev => ({...prev, [p.key]: result }));
+        return result;
+    });
+
+    const results = await Promise.all(scrapePromises);
+    
+    // 7) Aggregation Order
+    const orderedKeys = ['instagram', 'twitter', 'tiktok', 'snapchat', 'facebook', 'threads'];
+    let finalScrapedText = "";
+
+    orderedKeys.forEach(key => {
+        const res = results.find(r => r?.platform === key);
+        if (res && res.text) {
+            finalScrapedText += `\n[SOURCE: ${key.toUpperCase()}]\n${res.text}\n`;
+        }
+    });
+
+    // 9) Error handling: If no text at all
+    const hasText = finalScrapedText.length > 0 || formData.textContext.length > 0 || formData.uploadedContent.length > 0 || imageFiles.length > 0;
+    
+    if (!hasText) {
+        setIsScraping(false);
+        alert("No text available from any source. Please add manual notes, upload a chat file, or try different usernames.");
+        return;
+    }
+
+    // 13) Return value: Update form data
+    const updatedFormData = { ...formData, scrapedContent: finalScrapedText };
+    setFormData(updatedFormData);
+    
+    setIsScraping(false);
+    
+    // Proceed to Gemini
+    onAnalyze(updatedFormData, imageFiles.map(f => f.data), mode);
+  };
+
+  const handleTestHarness = async () => {
+      setIsScraping(true);
+      const results = await runTestHarness();
+      const statusMap: Record<string, PlatformResult> = {};
+      results.forEach(r => statusMap[r.platform] = r);
+      setScrapeStatuses(statusMap);
+      setIsScraping(false);
   };
 
   const isB2B = mode === AnalysisMode.B2B;
   const isCompat = mode === AnalysisMode.COMPATIBILITY;
 
   return (
-    <div className="w-full max-w-lg mx-auto animate-slide-up">
+    <div className="w-full max-w-lg mx-auto animate-slide-up pb-20">
       
       {/* Back Navigation */}
       <button 
@@ -76,6 +217,14 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
       <div className="glass-card p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-indigo-500/20 dark:shadow-black/40 relative overflow-hidden transition-colors duration-200 ease-out">
         
+        {/* Admin Debug Toggle (Hidden in corner) */}
+        <div 
+            className="absolute top-4 right-4 text-gray-300 dark:text-slate-800 cursor-pointer hover:text-gray-500"
+            onClick={() => setShowDebug(!showDebug)}
+        >
+            <Terminal size={14} />
+        </div>
+
         {/* Decorative background gradients */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-violet-200/30 dark:bg-violet-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-200/30 dark:bg-indigo-500/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
@@ -162,20 +311,68 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                         onChange={(v) => setFormData({...formData, purpose: v})}
                     />
                 </div>
+                
+                {/* Social Media Inputs with Status Indicators */}
                 {!isB2B && !isCompat && (
-                    <div className="grid grid-cols-2 gap-4 animate-fade-in">
-                        <InputField 
-                            label="Instagram" 
-                            placeholder="@username" 
-                            value={formData.instagramUsername}
-                            onChange={(v) => setFormData({...formData, instagramUsername: v})}
-                        />
-                        <InputField 
-                            label="TikTok" 
-                            placeholder="@username" 
-                            value={formData.tikTokUsername}
-                            onChange={(v) => setFormData({...formData, tikTokUsername: v})}
-                        />
+                    <div className="animate-fade-in space-y-3">
+                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 mt-2 flex justify-between items-center">
+                             <span>Digital Footprint</span>
+                             {showDebug && (
+                                <button onClick={handleTestHarness} className="text-[10px] text-emerald-500 flex items-center gap-1 hover:underline">
+                                    <Play size={10} /> Test Scrapers
+                                </button>
+                             )}
+                         </h3>
+                         <div className="grid grid-cols-2 gap-3">
+                            <InputField 
+                                label="TikTok" 
+                                placeholder="@username" 
+                                value={formData.tikTokUsername}
+                                onChange={(v) => setFormData({...formData, tikTokUsername: v})}
+                                platformResult={scrapeStatuses['tiktok']}
+                            />
+                            <InputField 
+                                label="Instagram" 
+                                placeholder="@username" 
+                                value={formData.instagramUsername}
+                                onChange={(v) => setFormData({...formData, instagramUsername: v})}
+                                platformResult={scrapeStatuses['instagram']}
+                            />
+                            <InputField 
+                                label="Twitter" 
+                                placeholder="@username" 
+                                value={formData.twitterUsername}
+                                onChange={(v) => setFormData({...formData, twitterUsername: v})}
+                                platformResult={scrapeStatuses['twitter']}
+                            />
+                             <InputField 
+                                label="Facebook URL" 
+                                placeholder="profile url" 
+                                value={formData.facebookUsername}
+                                onChange={(v) => setFormData({...formData, facebookUsername: v})}
+                                platformResult={scrapeStatuses['facebook']}
+                            />
+                             <InputField 
+                                label="Threads" 
+                                placeholder="@username" 
+                                value={formData.threadsUsername}
+                                onChange={(v) => setFormData({...formData, threadsUsername: v})}
+                                platformResult={scrapeStatuses['threads']}
+                            />
+                             <InputField 
+                                label="Snapchat" 
+                                placeholder="@username" 
+                                value={formData.snapchatUsername}
+                                onChange={(v) => setFormData({...formData, snapchatUsername: v})}
+                                platformResult={scrapeStatuses['snapchat']}
+                            />
+                        </div>
+                        {/* 14) UX Feedback suggestion */}
+                        {(Object.values(scrapeStatuses) as PlatformResult[]).some(s => s.status === 'no_content') && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 italic pl-1 animate-fade-in">
+                                * Some profiles returned no public text. Try adding screenshots or manual notes below.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -187,7 +384,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 </h3>
                 <textarea 
                     className="w-full p-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 outline-none text-gray-700 dark:text-gray-200 transition-all duration-200 resize-none h-24 text-sm placeholder:text-gray-400"
-                    placeholder={isB2B ? "Paste emails, meeting notes, or chat logs from multiple clients..." : "Paste messages or context here..."}
+                    placeholder={isB2B ? "Paste emails, meeting notes, or chat logs from multiple clients..." : "Paste messages, bio, or manual notes here..."}
                     value={formData.textContext}
                     onChange={(e) => setFormData({...formData, textContext: e.target.value})}
                 ></textarea>
@@ -212,7 +409,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                         id="file-upload" 
                         className="hidden" 
                         multiple 
-                        accept="image/*, text/*"
+                        accept=".txt,image/*"
                         onChange={handleFileChange}
                     />
                     <label 
@@ -223,17 +420,27 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                             <Upload size={18} />
                         </div>
                         <span className="text-sm">
-                            {isB2B ? "Upload Client Docs" : "Add Screenshots"}
+                            {isB2B ? "Upload Logs / Docs" : "Upload Chats (.txt) or Screenshots"}
                         </span>
                     </label>
                 </div>
 
-                {files.length > 0 && (
+                {/* File Previews */}
+                {(imageFiles.length > 0 || textFilesMeta.length > 0) && (
                     <div className="flex flex-wrap gap-2 animate-fade-in">
-                        {files.map((file, idx) => (
-                            <div key={idx} className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700">
+                        {textFilesMeta.map((file, idx) => (
+                             <div key={`txt-${idx}`} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm border border-indigo-100 dark:border-indigo-800">
+                                <FileText size={12} />
                                 <span className="truncate max-w-[100px]">{file.name}</span>
-                                <button onClick={() => removeFile(idx)} className="text-gray-400 hover:text-red-500">
+                                <button onClick={() => removeTextFile(idx)} className="text-indigo-400 hover:text-red-500">
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        ))}
+                        {imageFiles.map((file, idx) => (
+                            <div key={`img-${idx}`} className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700">
+                                <span className="truncate max-w-[100px]">{file.name}</span>
+                                <button onClick={() => removeImage(idx)} className="text-gray-400 hover:text-red-500">
                                     <X size={12} />
                                 </button>
                             </div>
@@ -244,18 +451,18 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
             {/* Action Button */}
             <button
-                onClick={handleSubmit}
-                disabled={isAnalyzing}
+                onClick={handleRunAnalysis}
+                disabled={isAnalyzing || isScraping}
                 className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl shadow-indigo-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 relative overflow-hidden group
-                ${isAnalyzing ? 'bg-slate-800 dark:bg-slate-900 cursor-not-allowed' : 'bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-100 text-white hover:shadow-indigo-500/40'}
+                ${(isAnalyzing || isScraping) ? 'bg-slate-800 dark:bg-slate-900 cursor-not-allowed' : 'bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-100 text-white hover:shadow-indigo-500/40'}
                 `}
             >
-                {isAnalyzing ? (
+                {isAnalyzing || isScraping ? (
                 <>
                     <div className="flex items-center gap-3 z-10">
                         <div className="w-5 h-5 border-2 border-white/20 dark:border-gray-900/20 border-t-white dark:border-t-gray-900 rounded-full animate-spin"></div>
                         <span className="animate-pulse font-medium text-gray-300 dark:text-gray-500">
-                            {isB2B ? "Segmenting..." : isCompat ? "Calculating Match..." : "Analyzing Psyche..."}
+                            {isScraping ? "Scraping Public Profiles..." : isB2B ? "Segmenting..." : isCompat ? "Calculating Match..." : "Analyzing Psyche..."}
                         </span>
                     </div>
                     {/* Progress bar */}
@@ -277,28 +484,61 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
         </div>
       </div>
+      
+      {/* 10) Debug Panel (only shows if toggled) */}
+      {showDebug && Object.keys(scrapeStatuses).length > 0 && (
+          <div className="mt-8 p-4 bg-slate-900 text-green-400 font-mono text-xs rounded-xl overflow-x-auto border border-slate-700 animate-slide-up">
+              <h4 className="font-bold text-white mb-2 border-b border-slate-700 pb-1">Admin Scrape Telemetry</h4>
+              <pre>{JSON.stringify(scrapeStatuses, null, 2)}</pre>
+          </div>
+      )}
     </div>
   );
 };
 
-const InputField = ({ label, placeholder, value, onChange }: { label: string, placeholder: string, value: string, onChange: (v: string) => void }) => (
-    <div className="group relative">
-        <input 
-            type="text" 
-            placeholder=" "
-            className="peer w-full p-4 pt-5 pb-3 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 outline-none text-gray-800 dark:text-gray-100 text-sm font-medium transition-all duration-200"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-        />
-        <label className="absolute left-4 top-4 text-gray-400 text-xs transition-all duration-200 peer-focus:-translate-y-2.5 peer-focus:text-[10px] peer-focus:font-bold peer-focus:text-violet-500 dark:peer-focus:text-violet-400 peer-not-placeholder-shown:-translate-y-2.5 peer-not-placeholder-shown:text-[10px] peer-not-placeholder-shown:font-bold pointer-events-none">
-            {label.toUpperCase()}
-        </label>
-        {value.length > 2 && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-scale-in bg-white dark:bg-slate-700 rounded-full p-0.5 shadow-sm">
-                <Check size={14} strokeWidth={3} />
+interface InputFieldProps {
+    label: string;
+    placeholder: string;
+    value: string;
+    onChange: (v: string) => void;
+    platformResult?: PlatformResult;
+}
+
+const InputField = ({ label, placeholder, value, onChange, platformResult }: InputFieldProps) => {
+    // Explicitly casting to handle potential type inference issues
+    const result = platformResult as PlatformResult | undefined;
+    const isError = result?.status === 'error' || result?.status === 'no_content';
+
+    return (
+        <div className="group relative">
+            <input 
+                type="text" 
+                placeholder=" "
+                className={`peer w-full p-4 pt-5 pb-3 bg-white/50 dark:bg-slate-900/50 border rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 outline-none text-gray-800 dark:text-gray-100 text-sm font-medium transition-all duration-200 
+                ${isError
+                    ? 'border-rose-300 dark:border-rose-900/50 focus:ring-rose-100/50 dark:focus:ring-rose-900/30' 
+                    : 'border-white/60 dark:border-white/10 focus:ring-violet-100/50 dark:focus:ring-violet-900/30'}`}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+            />
+            <label className="absolute left-4 top-4 text-gray-400 text-xs transition-all duration-200 peer-focus:-translate-y-2.5 peer-focus:text-[10px] peer-focus:font-bold peer-focus:text-violet-500 dark:peer-focus:text-violet-400 peer-not-placeholder-shown:-translate-y-2.5 peer-not-placeholder-shown:text-[10px] peer-not-placeholder-shown:font-bold pointer-events-none">
+                {label.toUpperCase()}
+            </label>
+            
+            {/* Scrape Status Icon */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {result ? (
+                    <StatusIcon status={result.status} error={result.error} />
+                ) : (
+                    value.length > 2 && (
+                        <div className="text-emerald-500 animate-scale-in bg-white dark:bg-slate-700 rounded-full p-0.5 shadow-sm">
+                            <Check size={14} strokeWidth={3} />
+                        </div>
+                    )
+                )}
             </div>
-        )}
-    </div>
-);
+        </div>
+    );
+};
 
 export default InputSection;

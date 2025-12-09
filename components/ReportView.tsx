@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { AnalysisReport, PersonalityTrait, ProtocolPlan } from '../types';
-import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check, Calendar, ChevronRight, PlayCircle, Loader2, Sparkles, MessageSquare } from 'lucide-react';
+import { MessageCircle, Flag, Shield, Heart, Activity, Brain, TrendingUp, Check, Calendar, ChevronRight, PlayCircle, Loader2, Sparkles, MessageSquare, Swords } from 'lucide-react';
 import { generateActionPlan } from '../services/geminiService';
 
 interface ReportViewProps {
   report: AnalysisReport;
   onChatClick: () => void;
+  onSimulateClick: () => void;
+  onVigilanceClick: () => void;
 }
 
 const TraitBar: React.FC<{ trait: PersonalityTrait; index: number }> = ({ trait, index }) => {
@@ -56,7 +58,7 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
   </div>
 );
 
-const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
+const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick, onSimulateClick, onVigilanceClick }) => {
   const [protocol, setProtocol] = useState<ProtocolPlan | null>(null);
   const [protocolLoading, setProtocolLoading] = useState(false);
   const [protocolGoal, setProtocolGoal] = useState("Get a Date");
@@ -83,9 +85,18 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-fuchsia-500 opacity-20 rounded-full -ml-10 -mb-10 blur-3xl animate-blob delay-500"></div>
         
         <div className="relative z-10">
-            <div className="flex items-center gap-2 text-indigo-200 text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
-                <Brain size={12} />
-                Psychological Analysis
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-indigo-200 text-[10px] font-bold tracking-[0.2em] uppercase">
+                    <Brain size={12} />
+                    Psychological Analysis
+                </div>
+                <button 
+                  onClick={onVigilanceClick}
+                  className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 transition-colors border border-white/10"
+                >
+                  <Activity size={10} />
+                  Activate Vigilance
+                </button>
             </div>
             <h2 className="text-3xl md:text-4xl font-black mb-6 tracking-tight leading-tight">
               Behavioral <br/> <span className="text-indigo-300">Decoded.</span>
@@ -121,6 +132,31 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick }) => {
                 <p className="text-pink-900 dark:text-pink-100 italic relative z-10 text-sm leading-relaxed">{report.datingMessage}</p>
             </div>
         </div>
+      </div>
+
+      {/* FEATURE 1: THE PRACTICE ROOM (CONFLICT SIMULATOR) */}
+      <div 
+        onClick={onSimulateClick}
+        className="cursor-pointer bg-slate-900 dark:bg-black p-6 rounded-3xl mb-5 animate-slide-up delay-300 group hover:scale-[1.01] transition-all duration-300 relative overflow-hidden border border-slate-700 dark:border-slate-800 shadow-xl"
+      >
+         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+         <div className="flex items-start gap-4 relative z-10">
+            <div className="w-14 h-14 bg-emerald-900/50 rounded-2xl flex items-center justify-center shadow-lg text-emerald-400 shrink-0 border border-emerald-500/20">
+               <Swords size={26} />
+            </div>
+            <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                   <h3 className="font-bold text-lg text-white">The Practice Room</h3>
+                   <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-500/20">Pro Tier</span>
+                </div>
+                <p className="text-sm text-slate-400 leading-relaxed mb-3">
+                    Zero-risk conflict simulator. Roleplay high-stakes conversations against a perfect AI clone of this profile.
+                </p>
+                <div className="flex items-center gap-2 text-sm font-bold text-emerald-500 group-hover:translate-x-1 transition-transform">
+                    Enter Simulation <ChevronRight size={16} />
+                </div>
+            </div>
+         </div>
       </div>
 
       {/* FEATURE 2: ASK THE STRATEGIST */}
