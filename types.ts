@@ -47,18 +47,11 @@ export interface CompatibilityReport {
 }
 
 export interface FormData {
-  tikTokUsername: string;
-  instagramUsername: string;
-  twitterUsername: string;
-  facebookUsername: string;
-  threadsUsername: string;
-  snapchatUsername: string;
   relationship: string;
   purpose: string; // e.g., Dating, Friendship, Business
   textContext: string;
   userContext?: string; // For compatibility mode
   uploadedContent: string; // Content from text files
-  scrapedContent?: string; // Content from social media scraping
 }
 
 export interface ChatMessage {
@@ -100,7 +93,7 @@ export interface MonitoredProfile {
   changeDetected: boolean;
 }
 
-export type ScrapeStatus = 'pending' | 'loading' | 'success' | 'skipped' | 'no_content' | 'error';
+export type ScrapeStatus = 'success' | 'loading' | 'error' | 'skipped' | 'no_content';
 
 export interface PlatformResult {
   platform: string;

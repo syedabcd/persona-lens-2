@@ -109,15 +109,10 @@ export const analyzePersona = async (
   relationship: string,
   purpose: string,
   mode: AnalysisMode,
-  uploadedContent: string = "", 
-  scrapedContent: string = "" // Now passed in from the UI scraping process
+  uploadedContent: string = ""
 ): Promise<AnalysisReport> => {
   
-  // 7) Aggregation logic: Combine all sources
   const fullContext = `
-    --- SOCIAL MEDIA SCRAPED DATA ---
-    ${scrapedContent}
-    
     --- UPLOADED TEXT FILES / CHAT LOGS ---
     ${uploadedContent}
 
@@ -125,12 +120,11 @@ export const analyzePersona = async (
     ${context}
   `;
 
-  // Default to Flash for speed and reliability unless in DEEP mode
-  const modelName = "gemini-2.5-flash";
+  const modelName = "gemini-3-flash-preview";
   const thinkingBudget = mode === AnalysisMode.DEEP ? 10240 : 0;
 
   const prompt = `
-    Analyze the following person based on the provided aggregated data (social media scrapes, chat logs, screenshots, and notes).
+    Analyze the following person based on the provided aggregated data (chat logs, screenshots, and notes).
     
     Context:
     - Relationship to User: ${relationship}
@@ -146,7 +140,6 @@ export const analyzePersona = async (
 
   const parts: any[] = [{ text: prompt }];
   
-  // Add images if any
   files.forEach(file => {
     parts.push({
       inlineData: {
@@ -189,7 +182,7 @@ export const analyzeClientSegmentation = async (
   industry: string,
   objective: string
 ): Promise<SegmentationReport> => {
-  const modelName = "gemini-2.5-flash";
+  const modelName = "gemini-3-flash-preview";
   
   const prompt = `
     You are an expert sales psychologist and B2B strategist.
@@ -249,7 +242,7 @@ export const analyzeCompatibility = async (
   files: FileData[],
   relationshipType: string
 ): Promise<CompatibilityReport> => {
-  const modelName = "gemini-2.5-flash";
+  const modelName = "gemini-3-flash-preview";
   
   const prompt = `
     You are a relationship psychologist and compatibility expert.
@@ -303,7 +296,7 @@ export const generateActionPlan = async (
   report: AnalysisReport,
   goal: string
 ): Promise<ProtocolPlan> => {
-  const modelName = "gemini-2.5-flash";
+  const modelName = "gemini-3-flash-preview";
 
   const prompt = `
     Based on the following psychological analysis of a person, create a 7-day action plan (The Daily Protocol) to achieve the specific goal: "${goal}".
@@ -340,7 +333,7 @@ export const chatWithPersonaBot = async (
   newMessage: string,
   reportContext: AnalysisReport | null
 ) => {
-  const model = "gemini-2.5-flash";
+  const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
   const systemInstruction = `
@@ -377,7 +370,7 @@ export const createSimulationChat = (
   reportContext: AnalysisReport,
   goal: string
 ) => {
-  const model = "gemini-2.5-flash";
+  const model = "gemini-3-flash-preview";
   const contextStr = JSON.stringify(reportContext);
 
   const systemInstruction = `
@@ -412,7 +405,7 @@ export const evaluateSimulation = async (
   goal: string,
   reportContext: AnalysisReport
 ): Promise<SimulationFeedback> => {
-  const modelName = "gemini-2.5-flash";
+  const modelName = "gemini-3-flash-preview";
 
   const prompt = `
     Analyze the following roleplay transcript between the User and the Target.
