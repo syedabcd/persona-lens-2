@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal } from 'lucide-react';
-import { FormData, FileData, AnalysisMode } from '../types';
+import React, { useState, useRef } from 'react';
+import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { FormData, FileData, AnalysisMode, SocialProfile } from '../types';
+import { scrapePublicProfile } from '../services/scrapingService';
 
 interface InputSectionProps {
   onAnalyze: (data: FormData, files: FileData[], mode: AnalysisMode) => void;
@@ -17,63 +18,214 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     uploadedContent: '',
   });
   
-  const [imageFiles, setImageFiles] = useState<{name: string, data: FileData}[]>([]);
+  const [activeTab, setActiveTab] = useState<'upload' | 'social'>('upload');
+  
+  // Renamed to mediaFiles to support Images AND PDFs
+  const [mediaFiles, setMediaFiles] = useState<{name: string, data: FileData}[]>([]);
   const [textFilesMeta, setTextFilesMeta] = useState<{name: string}[]>([]);
   const [mode, setMode] = useState<AnalysisMode>(AnalysisMode.DEEP);
+  const [dragActive, setDragActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Social Scraping State
+  const [scrapePlatform, setScrapePlatform] = useState('instagram');
+  const [scrapeUsername, setScrapeUsername] = useState('');
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapedProfile, setScrapedProfile] = useState<SocialProfile | null>(null);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+
+  const processFiles = async (files: FileList) => {
+    const newMedia: {name: string, data: FileData}[] = [];
+    const newTextFiles: {name: string}[] = [];
+    let newTextContent = "";
+
+    // Image compression helper to prevent Payload Too Large errors
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Limit max dimension to reduce token count and payload size
+                    const MAX_SIZE = 1536;
+                    
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error("Canvas context not available"));
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Export as JPEG with 0.8 quality
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl.split(',')[1]);
+                };
+                img.onerror = (err) => reject(err);
+                if (e.target?.result) {
+                    img.src = e.target.result as string;
+                }
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const processFile = async (file: File): Promise<void> => {
+      try {
+        // Handle Text Files (.txt) -> Append to context string
+        if (file.type === "text/plain" || file.name.endsWith('.txt')) {
+             return new Promise((resolve) => {
+               const reader = new FileReader();
+               reader.onload = (event) => {
+                   let text = event.target?.result as string;
+                   // Safety truncation for massive logs
+                   if (text.length > 50000) {
+                       text = text.substring(0, 50000) + "\n...[TRUNCATED DUE TO SIZE]...";
+                   }
+                   newTextContent += `\n--- START OF FILE: ${file.name} ---\n${text}\n--- END OF FILE ---\n`;
+                   newTextFiles.push({ name: file.name });
+                   resolve();
+               };
+               reader.readAsText(file);
+             });
+        } 
+        // Handle Images -> Compress & Convert to Base64
+        else if (file.type.startsWith("image/")) {
+            const compressedBase64 = await compressImage(file);
+            newMedia.push({
+                name: file.name,
+                data: {
+                    mimeType: 'image/jpeg', // Normalize to JPEG
+                    data: compressedBase64
+                }
+            });
+        }
+        // Handle PDFs -> Raw Base64
+        else if (file.type === "application/pdf") {
+           return new Promise((resolve) => {
+               const reader = new FileReader();
+               reader.onloadend = () => {
+                  const base64String = reader.result as string;
+                  const base64Data = base64String.split(',')[1];
+                  newMedia.push({
+                      name: file.name,
+                      data: {
+                          mimeType: file.type,
+                          data: base64Data
+                      }
+                  });
+                  resolve();
+               };
+               reader.readAsDataURL(file);
+           });
+        }
+      } catch (error) {
+          console.error("Error processing file:", file.name, error);
+          alert(`Failed to process ${file.name}. It might be corrupted or too large.`);
+      }
+    };
+
+    for (let i = 0; i < files.length; i++) {
+      await processFile(files[i]);
+    }
+
+    setMediaFiles(prev => [...prev, ...newMedia]);
+    setTextFilesMeta(prev => [...prev, ...newTextFiles]);
+    setFormData(prev => ({
+      ...prev,
+      uploadedContent: prev.uploadedContent + newTextContent
+    }));
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newImages: {name: string, data: FileData}[] = [];
-      const newTextFiles: {name: string}[] = [];
-      let newTextContent = "";
-
-      const processFile = (file: File): Promise<void> => {
-        return new Promise((resolve) => {
-          if (file.type === "text/plain" || file.name.endsWith('.txt')) {
-             const reader = new FileReader();
-             reader.onload = (event) => {
-                 const text = event.target?.result as string;
-                 newTextContent += `\n--- START OF FILE: ${file.name} ---\n${text}\n--- END OF FILE ---\n`;
-                 newTextFiles.push({ name: file.name });
-                 resolve();
-             };
-             reader.readAsText(file);
-          } 
-          else if (file.type.startsWith("image/")) {
-             const reader = new FileReader();
-             reader.onloadend = () => {
-                const base64String = reader.result as string;
-                const base64Data = base64String.split(',')[1];
-                newImages.push({
-                    name: file.name,
-                    data: {
-                        mimeType: file.type,
-                        data: base64Data
-                    }
-                });
-                resolve();
-             };
-             reader.readAsDataURL(file);
-          } else {
-             resolve();
-          }
-        });
-      };
-
-      for (let i = 0; i < e.target.files.length; i++) {
-        await processFile(e.target.files[i]);
-      }
-
-      setImageFiles(prev => [...prev, ...newImages]);
-      setTextFilesMeta(prev => [...prev, ...newTextFiles]);
-      setFormData(prev => ({
-        ...prev,
-        uploadedContent: prev.uploadedContent + newTextContent
-      }));
+      await processFiles(e.target.files);
     }
   };
 
-  const removeImage = (index: number) => setImageFiles(prev => prev.filter((_, i) => i !== index));
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        await processFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+      if (e.clipboardData.files.length > 0) {
+          e.preventDefault();
+          await processFiles(e.clipboardData.files);
+      }
+  };
+
+  const handleScrape = async () => {
+      if (!scrapeUsername) return;
+      setIsScraping(true);
+      setScrapedProfile(null);
+      setScrapeError(null);
+      try {
+          const result = await scrapePublicProfile(scrapePlatform, scrapeUsername);
+          if (result.success && result.data) {
+              setScrapedProfile(result.data);
+              
+              // Automatically append to text context
+              const scrapeContent = `
+              \n--- SCRAPED SOCIAL PROFILE (${scrapePlatform.toUpperCase()}) ---
+              Username: ${result.data.username}
+              Name: ${result.data.display_name}
+              Bio: ${result.data.bio}
+              Followers: ${result.data.followers} | Following: ${result.data.following}
+              Verified: ${result.data.is_verified}
+              
+              --- RECENT POST CAPTIONS ---
+              ${result.data.raw_posts_text || '(No public posts text found)'}
+              \n-----------------------------------\n
+              `;
+              
+              setFormData(prev => ({
+                  ...prev,
+                  textContext: prev.textContext + scrapeContent
+              }));
+          } else {
+              setScrapeError(result.error || "Failed to scrape profile. Ensure it is public.");
+          }
+      } catch (e) {
+          setScrapeError("Unexpected error occurred.");
+      } finally {
+          setIsScraping(false);
+      }
+  };
+
+  const removeMedia = (index: number) => setMediaFiles(prev => prev.filter((_, i) => i !== index));
   const removeTextFile = (index: number) => setTextFilesMeta(prev => prev.filter((_, i) => i !== index));
 
   const handleRunAnalysis = async () => {
@@ -82,21 +234,24 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       return;
     }
 
-    const hasText = formData.textContext.length > 0 || formData.uploadedContent.length > 0 || imageFiles.length > 0;
+    const hasText = formData.textContext.length > 0 || formData.uploadedContent.length > 0 || mediaFiles.length > 0;
     
     if (!hasText) {
         alert("No evidence available. Please add manual notes, upload a chat file, or screenshots.");
         return;
     }
 
-    onAnalyze(formData, imageFiles.map(f => f.data), mode);
+    onAnalyze(formData, mediaFiles.map(f => f.data), mode);
   };
 
   const isB2B = mode === AnalysisMode.B2B;
   const isCompat = mode === AnalysisMode.COMPATIBILITY;
 
   return (
-    <div className="w-full max-w-lg mx-auto animate-slide-up pb-20">
+    <div 
+        className="w-full max-w-lg mx-auto animate-slide-up pb-20"
+        onPaste={handlePaste} // Enable global paste in container
+    >
       
       {/* Back Navigation */}
       <button 
@@ -118,7 +273,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 {isB2B ? "B2B Segmentation" : isCompat ? "Compatibility Check" : "New Analysis"}
             </h2>
             <p className="text-gray-400 dark:text-gray-500 text-sm">
-                {isB2B ? "Upload data for multiple clients to cluster them." : isCompat ? "Compare your personality with the target." : "Provide context for the AI to analyze"}
+                {isB2B ? "Upload data for multiple clients to cluster them." : isCompat ? "Compare your personality with the target." : "Drag & drop chats, screenshots, or import social profiles."}
             </p>
         </div>
 
@@ -184,7 +339,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 <div className="grid grid-cols-2 gap-4">
                     <InputField 
                         label={isB2B ? "Industry" : "Relationship"}
-                        placeholder={isB2B ? "Ex, SaaS, Real Estate..." : "Ex, Boss..."}
+                        placeholder={isB2B ? "Ex, SaaS, Real Estate..." : "Ex, Boss, Ex-Partner..."}
                         value={formData.relationship}
                         onChange={(v) => setFormData({...formData, relationship: v})}
                     />
@@ -197,14 +352,33 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                 </div>
             </div>
 
-            {/* Evidence Group */}
+            {/* Input Method Tabs */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-2">
+                <button
+                    onClick={() => setActiveTab('upload')}
+                    className={`pb-2 px-4 text-sm font-medium transition-all relative ${activeTab === 'upload' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500'}`}
+                >
+                    Files & Screenshots
+                    {activeTab === 'upload' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></span>}
+                </button>
+                <button
+                    onClick={() => setActiveTab('social')}
+                    className={`pb-2 px-4 text-sm font-medium transition-all relative ${activeTab === 'social' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500'}`}
+                >
+                    Social Media (Public)
+                    {activeTab === 'social' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></span>}
+                </button>
+            </div>
+
+            {/* Evidence Group (Drag & Drop Zone OR Social Input) */}
             <div className="space-y-3">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
                     {isB2B ? "Client Data Source" : isCompat ? "Target Evidence" : "Evidence"}
                 </h3>
+                
                 <textarea 
                     className="w-full p-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 outline-none text-gray-700 dark:text-gray-200 transition-all duration-200 resize-none h-24 text-sm placeholder:text-gray-400"
-                    placeholder={isB2B ? "Paste emails, meeting notes, or chat logs from multiple clients..." : "Paste messages, bio, or manual notes here..."}
+                    placeholder={isB2B ? "Paste emails, meeting notes, or chat logs from multiple clients..." : "Paste messages, bio, or notes. You can also paste screenshots (Ctrl+V) directly here."}
                     value={formData.textContext}
                     onChange={(e) => setFormData({...formData, textContext: e.target.value})}
                 ></textarea>
@@ -223,48 +397,146 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     </div>
                 )}
                 
-                <div className="relative group pt-2">
-                    <input 
-                        type="file" 
-                        id="file-upload" 
-                        className="hidden" 
-                        multiple 
-                        accept=".txt,image/*"
-                        onChange={handleFileChange}
-                    />
-                    <label 
-                        htmlFor="file-upload"
-                        className="flex items-center justify-center gap-3 w-full p-4 border-2 border-dashed border-indigo-200 dark:border-indigo-800/50 rounded-2xl bg-indigo-50/30 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 dark:hover:border-indigo-600 hover:scale-[1.01] transition-all duration-200"
+                {activeTab === 'upload' ? (
+                    <>
+                    <div 
+                        className="relative group pt-2 animate-fade-in"
+                        onDragEnter={handleDrag} 
+                        onDragLeave={handleDrag} 
+                        onDragOver={handleDrag} 
+                        onDrop={handleDrop}
                     >
-                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-indigo-500 dark:text-indigo-400">
-                            <Upload size={18} />
-                        </div>
-                        <span className="text-sm">
-                            {isB2B ? "Upload Logs / Docs" : "Upload Chats (.txt) or Screenshots"}
-                        </span>
-                    </label>
-                </div>
+                        <input 
+                            ref={inputRef}
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            multiple 
+                            accept=".txt,.pdf,image/*"
+                            onChange={handleFileChange}
+                        />
+                        <label 
+                            htmlFor="file-upload"
+                            className={`flex flex-col items-center justify-center gap-2 w-full p-6 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                            ${dragActive 
+                                ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-900/20 scale-[1.02]' 
+                                : 'border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 dark:hover:border-indigo-600'
+                            }`}
+                        >
+                            <div className={`p-3 rounded-xl shadow-sm transition-colors ${dragActive ? 'bg-violet-100 text-violet-600' : 'bg-white dark:bg-slate-800 text-indigo-500 dark:text-indigo-400'}`}>
+                                <Upload size={24} className={dragActive ? 'animate-bounce' : ''} />
+                            </div>
+                            <div className="text-center">
+                                <span className="text-sm font-semibold block mb-1">
+                                    {dragActive ? "Drop files to analyze" : isB2B ? "Upload Logs / Docs" : "Upload Chats (.txt, .pdf) or Screenshots"}
+                                </span>
+                                <span className="text-xs opacity-70">
+                                    Drag & drop or paste (Ctrl+V) supported
+                                </span>
+                            </div>
+                        </label>
+                    </div>
 
-                {/* File Previews */}
-                {(imageFiles.length > 0 || textFilesMeta.length > 0) && (
-                    <div className="flex flex-wrap gap-2 animate-fade-in">
-                        {textFilesMeta.map((file, idx) => (
-                             <div key={`txt-${idx}`} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm border border-indigo-100 dark:border-indigo-800">
-                                <FileText size={12} />
-                                <span className="truncate max-w-[100px]">{file.name}</span>
-                                <button onClick={() => removeTextFile(idx)} className="text-indigo-400 hover:text-red-500">
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        ))}
-                        {imageFiles.map((file, idx) => (
-                            <div key={`img-${idx}`} className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <span className="truncate max-w-[100px]">{file.name}</span>
-                                <button onClick={() => removeImage(idx)} className="text-gray-400 hover:text-red-500">
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        ))}
+                    {/* File Previews */}
+                    {(mediaFiles.length > 0 || textFilesMeta.length > 0) && (
+                        <div className="flex flex-wrap gap-2 animate-fade-in pt-2">
+                            {textFilesMeta.map((file, idx) => (
+                                <div key={`txt-${idx}`} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-2 rounded-xl text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm border border-indigo-100 dark:border-indigo-800">
+                                    <FileText size={14} className="opacity-70" />
+                                    <span className="truncate max-w-[120px]">{file.name}</span>
+                                    <button onClick={() => removeTextFile(idx)} className="text-indigo-400 hover:text-rose-500 p-1 rounded-full hover:bg-white/20 transition-colors">
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                            {mediaFiles.map((file, idx) => (
+                                <div key={`media-${idx}`} className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm border border-gray-100 dark:border-gray-700">
+                                    {file.data.mimeType === 'application/pdf' ? <FileText size={14} className="text-red-500" /> : <ImageIcon size={14} className="text-blue-500" />}
+                                    <span className="truncate max-w-[120px]">{file.name}</span>
+                                    <button onClick={() => removeMedia(idx)} className="text-gray-400 hover:text-rose-500 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    </>
+                ) : (
+                    <div className="animate-fade-in pt-2">
+                        <div className="bg-white/50 dark:bg-slate-900/50 border border-indigo-200 dark:border-indigo-800/50 p-5 rounded-2xl space-y-4">
+                           <div className="flex gap-4">
+                               <div className="flex-1">
+                                   <label className="text-xs font-bold text-gray-500 mb-1.5 block">Platform</label>
+                                   <select 
+                                     className="w-full p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 text-sm"
+                                     value={scrapePlatform}
+                                     onChange={(e) => setScrapePlatform(e.target.value)}
+                                   >
+                                       <option value="instagram">Instagram</option>
+                                       <option value="twitter">Twitter / X</option>
+                                       <option value="tiktok">TikTok</option>
+                                       <option value="linkedin">LinkedIn</option>
+                                       <option value="snapchat">Snapchat</option>
+                                   </select>
+                               </div>
+                               <div className="flex-[2]">
+                                   <label className="text-xs font-bold text-gray-500 mb-1.5 block">Username / Profile URL</label>
+                                   <input 
+                                     type="text" 
+                                     className="w-full p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 text-sm"
+                                     placeholder="@username"
+                                     value={scrapeUsername}
+                                     onChange={(e) => {
+                                         setScrapeUsername(e.target.value);
+                                         setScrapeError(null);
+                                     }}
+                                   />
+                               </div>
+                           </div>
+                           
+                           {scrapeError && (
+                               <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 rounded-xl p-3 flex items-start gap-2 text-xs text-rose-600 dark:text-rose-400 animate-slide-up">
+                                   <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                                   <span>{scrapeError}</span>
+                               </div>
+                           )}
+
+                           <button
+                             onClick={handleScrape}
+                             disabled={isScraping || !scrapeUsername}
+                             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                           >
+                               {isScraping ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} />}
+                               {isScraping ? "Scraping Profile..." : "Import Public Profile Data"}
+                           </button>
+                           
+                           <p className="text-[10px] text-gray-400 text-center">
+                               Note: Only retrieves public bio, stats, and recent post captions. Private profiles cannot be accessed.
+                           </p>
+
+                           {scrapedProfile && (
+                               <div className="mt-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 flex gap-4 items-start animate-slide-up">
+                                   {scrapedProfile.profile_image && (
+                                       <img src={scrapedProfile.profile_image} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-emerald-200" />
+                                   )}
+                                   <div className="flex-1 min-w-0">
+                                       <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm flex items-center gap-1">
+                                           {scrapedProfile.display_name} 
+                                           {scrapedProfile.is_verified && <CheckCircle size={12} className="fill-emerald-500 text-white" />}
+                                       </h4>
+                                       <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">@{scrapedProfile.username}</p>
+                                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{scrapedProfile.bio}</p>
+                                       <div className="flex gap-3 mt-2 text-[10px] font-mono text-gray-400">
+                                           <span><b>{scrapedProfile.followers}</b> Followers</span>
+                                           <span><b>{scrapedProfile.posts_count}</b> Posts</span>
+                                       </div>
+                                       <div className="mt-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                           <CheckCircle size={10} /> Data added to analysis context
+                                       </div>
+                                   </div>
+                               </div>
+                           )}
+                        </div>
                     </div>
                 )}
             </div>
@@ -273,7 +545,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             <button
                 onClick={handleRunAnalysis}
                 disabled={isAnalyzing}
-                className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl shadow-indigo-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 relative overflow-hidden group
+                className={`w-full py-4 rounded-2xl font-bold text-lg shadow-xl shadow-indigo-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 relative overflow-hidden group mt-4
                 ${isAnalyzing ? 'bg-slate-800 dark:bg-slate-900 cursor-not-allowed' : 'bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-100 text-white hover:shadow-indigo-500/40'}
                 `}
             >

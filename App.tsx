@@ -66,9 +66,9 @@ const App: React.FC = () => {
 
       setView('report');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis Error:", error);
-      alert("Something went wrong during analysis. Please try again.");
+      alert(error.message || "Something went wrong during analysis. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -175,7 +175,7 @@ const App: React.FC = () => {
         {activeTab === 'history' && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up">
              <div className="glass-card p-10 rounded-[2rem] text-center max-w-sm mx-auto shadow-xl shadow-black/30">
-                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
                   <span className="text-2xl">🔒</span>
                 </div>
                 <h3 className="font-bold text-xl text-white mb-2">History Vault</h3>

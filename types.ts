@@ -104,3 +104,18 @@ export interface PlatformResult {
   error?: string;
   httpStatus?: number;
 }
+
+export interface SocialProfile {
+  username: string;
+  display_name: string;
+  bio: string;
+  followers: number;
+  following: number;
+  posts_count: number;
+  platform: string;
+  profile_image: string;
+  external_links: string[];
+  is_verified: boolean;
+  raw_posts_text: string; // Concatenated captions for analysis
+  scrape_timestamp: string;
+}

@@ -103,6 +103,17 @@ const SIMULATION_FEEDBACK_SCHEMA: Schema = {
 
 // --- MAIN ANALYSIS FUNCTIONS ---
 
+const handleError = (error: any) => {
+    console.error("Gemini API Error:", error);
+    if (error.message?.includes('xhr error') || error.message?.includes('code: 6')) {
+        throw new Error("The upload is too large. Please upload fewer images or shorter text files.");
+    }
+    if (error.message?.includes('400')) {
+        throw new Error("Invalid request. Please check if your files are supported formats.");
+    }
+    throw error;
+};
+
 export const analyzePersona = async (
   context: string, // Manual text context
   files: FileData[], // Images (Screenshots)
@@ -171,7 +182,7 @@ export const analyzePersona = async (
       throw new Error("No response generated.");
     }
   } catch (error) {
-    console.error("Analysis failed:", error);
+    handleError(error);
     throw error;
   }
 };
@@ -231,7 +242,7 @@ export const analyzeClientSegmentation = async (
       throw new Error("No response generated.");
     }
   } catch (error) {
-    console.error("Segmentation failed:", error);
+    handleError(error);
     throw error;
   }
 };
@@ -287,7 +298,7 @@ export const analyzeCompatibility = async (
       throw new Error("No response generated.");
     }
   } catch (error) {
-    console.error("Compatibility Analysis failed:", error);
+    handleError(error);
     throw error;
   }
 };
@@ -312,19 +323,24 @@ export const generateActionPlan = async (
     - Tip: A psychological nuance to keep in mind.
   `;
 
-  const response = await ai.models.generateContent({
-    model: modelName,
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: PROTOCOL_SCHEMA,
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+        responseMimeType: "application/json",
+        responseSchema: PROTOCOL_SCHEMA,
+        }
+    });
 
-  if (response.text) {
-    return JSON.parse(response.text) as ProtocolPlan;
-  } else {
-    throw new Error("Failed to generate protocol.");
+    if (response.text) {
+        return JSON.parse(response.text) as ProtocolPlan;
+    } else {
+        throw new Error("Failed to generate protocol.");
+    }
+  } catch (error) {
+      handleError(error);
+      throw error;
   }
 };
 
@@ -427,18 +443,23 @@ export const evaluateSimulation = async (
     Provide a score (0-100), outcome, strengths, weaknesses, and tactical advice.
   `;
 
-  const response = await ai.models.generateContent({
-    model: modelName,
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: SIMULATION_FEEDBACK_SCHEMA,
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+        responseMimeType: "application/json",
+        responseSchema: SIMULATION_FEEDBACK_SCHEMA,
+        }
+    });
 
-  if (response.text) {
-    return JSON.parse(response.text) as SimulationFeedback;
-  } else {
-    throw new Error("Failed to evaluate simulation.");
+    if (response.text) {
+        return JSON.parse(response.text) as SimulationFeedback;
+    } else {
+        throw new Error("Failed to evaluate simulation.");
+    }
+  } catch (error) {
+      handleError(error);
+      throw error;
   }
 };
