@@ -63,60 +63,82 @@ const normalizeProfileData = (platform: string, raw: any): SocialProfile => {
 
     try {
         if (platform === 'instagram') {
-            profile.username = raw.username || '';
-            profile.display_name = raw.full_name || '';
-            profile.bio = raw.biography || '';
-            profile.followers = raw.follower_count || 0;
-            profile.following = raw.following_count || 0;
-            profile.posts_count = raw.media_count || 0;
-            profile.profile_image = raw.profile_pic_url || '';
-            profile.is_verified = raw.is_verified || false;
+            // Handle nested 'user' object common in scraping APIs
+            const data = raw.user || raw;
+
+            profile.username = data.username || '';
+            profile.display_name = data.full_name || '';
+            profile.bio = data.biography || '';
+            
+            // Handle different field names for stats (Standard vs Graph API)
+            profile.followers = data.follower_count || data.edge_followed_by?.count || 0;
+            profile.following = data.following_count || data.edge_follow?.count || 0;
+            profile.posts_count = data.media_count || data.edge_owner_to_timeline_media?.count || 0;
+            
+            profile.profile_image = data.profile_pic_url_hd || data.profile_pic_url || '';
+            profile.is_verified = data.is_verified || false;
             
             // Extract posts captions if available
-            if (raw.edge_owner_to_timeline_media?.edges) {
-                 profile.raw_posts_text = raw.edge_owner_to_timeline_media.edges
+            if (data.edge_owner_to_timeline_media?.edges) {
+                 profile.raw_posts_text = data.edge_owner_to_timeline_media.edges
                     .map((edge: any) => edge.node?.edge_media_to_caption?.edges[0]?.node?.text || '')
                     .join('\n\n');
             }
         } 
         else if (platform === 'twitter' || platform === 'x') {
-            const user = raw.data?.user?.result?.legacy || raw.legacy || raw;
-            profile.username = user.screen_name || '';
-            profile.display_name = user.name || '';
-            profile.bio = user.description || '';
-            profile.followers = user.followers_count || 0;
-            profile.following = user.friends_count || 0;
-            profile.posts_count = user.statuses_count || 0;
-            profile.profile_image = user.profile_image_url_https || '';
-            profile.is_verified = user.verified || false;
-            if (user.entities?.url?.urls) {
-                profile.external_links = user.entities.url.urls.map((u: any) => u.expanded_url);
+            const data = raw.data?.user?.result?.legacy || raw.legacy || raw.user || raw;
+            
+            profile.username = data.screen_name || data.username || '';
+            profile.display_name = data.name || '';
+            profile.bio = data.description || '';
+            profile.followers = data.followers_count || 0;
+            profile.following = data.friends_count || data.following_count || 0;
+            profile.posts_count = data.statuses_count || data.tweet_count || 0;
+            profile.profile_image = data.profile_image_url_https || data.profile_image_url || '';
+            profile.is_verified = data.verified || false;
+            
+            if (data.entities?.url?.urls) {
+                profile.external_links = data.entities.url.urls.map((u: any) => u.expanded_url);
             }
+            
             // Twitter scrape might return tweets separately or typically just profile info in basic endpoint
-            // If tweets are included in a separate 'tweets' array in raw response
+            // If tweets are included in a separate 'tweets' array in raw response (parent object)
             if (raw.tweets && Array.isArray(raw.tweets)) {
                 profile.raw_posts_text = raw.tweets.map((t: any) => t.text || t.full_text).join('\n\n');
             }
         }
         else if (platform === 'tiktok') {
-            profile.username = raw.uniqueId || raw.user?.uniqueId || '';
-            profile.display_name = raw.nickname || raw.user?.nickname || '';
-            profile.bio = raw.signature || raw.user?.signature || '';
-            profile.followers = raw.stats?.followerCount || raw.userInfo?.stats?.followerCount || 0;
-            profile.following = raw.stats?.followingCount || raw.userInfo?.stats?.followingCount || 0;
-            profile.posts_count = raw.stats?.videoCount || raw.userInfo?.stats?.videoCount || 0;
-            profile.profile_image = raw.avatarLarger || raw.user?.avatarLarger || '';
-            profile.is_verified = raw.verified || raw.user?.verified || false;
+            const data = raw.userInfo || raw.user || raw;
+            const stats = raw.stats || raw.userInfo?.stats || data.stats || {};
+            
+            profile.username = data.uniqueId || data.username || '';
+            profile.display_name = data.nickname || '';
+            profile.bio = data.signature || '';
+            profile.followers = stats.followerCount || 0;
+            profile.following = stats.followingCount || 0;
+            profile.posts_count = stats.videoCount || 0;
+            profile.profile_image = data.avatarLarger || data.avatarMedium || '';
+            profile.is_verified = data.verified || false;
         }
         else if (platform === 'linkedin') {
-            profile.username = raw.public_identifier || '';
-            profile.display_name = `${raw.first_name || ''} ${raw.last_name || ''}`.trim();
-            profile.bio = raw.headline || raw.summary || '';
-            profile.profile_image = raw.profile_picture || '';
+            const data = raw.user || raw;
+            profile.username = data.public_identifier || data.username || '';
+            profile.display_name = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+            profile.bio = data.headline || data.summary || '';
+            profile.profile_image = data.profile_picture || '';
             // LinkedIn structure varies heavily by scraper version
-            if (raw.experiences) {
-                profile.raw_posts_text = raw.experiences.map((exp: any) => `${exp.title} at ${exp.company}`).join('\n');
+            if (data.experiences) {
+                profile.raw_posts_text = data.experiences.map((exp: any) => `${exp.title} at ${exp.company}`).join('\n');
             }
+        }
+        else if (platform === 'snapchat') {
+            // Snapchat structure handling
+            const data = raw.userProfile || raw;
+            profile.username = data.username || data.snapcode || '';
+            profile.display_name = data.title || data.displayName || '';
+            profile.bio = data.bio || data.description || '';
+            profile.profile_image = data.bitmoji3d || data.snapcodeImageUrl || '';
+            profile.followers = data.subscriberCount || 0;
         }
     } catch (e) {
         console.warn("Normalization warning:", e);
@@ -136,13 +158,13 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
     // Map platform to ScrapeCreators Endpoint
     let endpoint = "";
     switch (platform.toLowerCase()) {
-        case 'instagram': endpoint = `/instagram/profile?username=${username}`; break;
+        case 'instagram': endpoint = `/instagram/profile?handle=${username}`; break; // Using handle
         case 'twitter': 
-        case 'x': endpoint = `/twitter/user/info?username=${username}`; break;
-        case 'tiktok': endpoint = `/tiktok/profile?handle=${username}`; break; // TikTok requires 'handle' param
+        case 'x': endpoint = `/twitter/profile?handle=${username}`; break; 
+        case 'tiktok': endpoint = `/tiktok/profile?handle=${username}`; break; 
         case 'linkedin': endpoint = `/linkedin/profile?username=${username}`; break;
         case 'facebook': endpoint = `/facebook/profile?username=${username}`; break; 
-        case 'snapchat': endpoint = `/snapchat/profile?username=${username}`; break;
+        case 'snapchat': endpoint = `/snapchat/profile?handle=${username}`; break; 
         default: return { success: false, error: "Unsupported platform" };
     }
 
