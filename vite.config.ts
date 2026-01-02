@@ -5,7 +5,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   return {
     define: {
-      'process.env': env,
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
     },
     base: '/',
     server: {
