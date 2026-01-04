@@ -52,7 +52,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     let height = img.height;
                     
                     // Limit max dimension to reduce token count and payload size
-                    const MAX_SIZE = 1536;
+                    // Reduced from 1536 to 1024 to prevent XHR errors
+                    const MAX_SIZE = 1024;
                     
                     if (width > height) {
                         if (width > MAX_SIZE) {
@@ -75,8 +76,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     }
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Export as JPEG with 0.8 quality
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    // Export as JPEG with 0.7 quality to reduce size
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     resolve(dataUrl.split(',')[1]);
                 };
                 img.onerror = (err) => reject(err);

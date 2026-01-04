@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseService';
-import { Sparkles, Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -10,6 +10,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +27,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
         if (error) throw error;
+        
+        // If signup is successful but no session (email confirmation required),
+        // we can either show a message or proceed. 
+        // To satisfy "directly go to analyze", we call success immediately.
+        // Note: Supabase project must have "Confirm Email" disabled for auto-login session to exist here.
       }
       onAuthSuccess();
     } catch (err: any) {
@@ -87,15 +93,23 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Password</label>
                 <div className="relative">
                     <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 pl-12 outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-gray-800 dark:text-white"
+                        className="w-full bg-white/50 dark:bg-slate-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 pl-12 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-gray-800 dark:text-white"
                         placeholder="••••••••"
                         required
                         minLength={6}
                     />
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none transition-colors"
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                 </div>
             </div>
 

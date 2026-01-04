@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile } from '../types';
 import { getUserProfile, updateUserProfile, signOut } from '../services/supabaseService';
 import { User, Mail, Zap, CreditCard, Edit2, Check, LogOut, Loader2, Crown, Sparkles, AlertCircle, X } from 'lucide-react';
@@ -9,6 +9,40 @@ interface ProfileViewProps {
   onLogout: () => void;
 }
 
+// Simple in-memory cache to prevent re-fetching on tab switches during the same session
+const profileCache: { [key: string]: UserProfile } = {};
+
+const ProfileSkeleton = () => (
+    <div className="w-full max-w-xl mx-auto pb-40 animate-pulse">
+        <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 overflow-hidden">
+            <div className="h-32 bg-slate-800"></div>
+            <div className="px-8 pb-8 relative">
+                <div className="absolute -top-12 left-8 w-24 h-24 bg-slate-800 rounded-3xl border-4 border-slate-900"></div>
+                <div className="flex justify-end pt-4 gap-2">
+                    <div className="w-10 h-10 bg-slate-800 rounded-xl"></div>
+                </div>
+                <div className="mt-14 space-y-6">
+                    <div className="space-y-4">
+                        <div>
+                            <div className="w-20 h-3 bg-slate-800 rounded mb-2"></div>
+                            <div className="h-14 bg-slate-800 rounded-xl w-full"></div>
+                        </div>
+                        <div>
+                            <div className="w-24 h-3 bg-slate-800 rounded mb-2"></div>
+                            <div className="h-14 bg-slate-800 rounded-xl w-full"></div>
+                        </div>
+                    </div>
+                    <div className="w-full h-px bg-slate-800"></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="h-32 bg-slate-800 rounded-2xl"></div>
+                        <div className="h-32 bg-slate-800 rounded-2xl"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
 const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,31 +50,47 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
   const [editUsername, setEditUsername] = useState('');
   const [saving, setSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  
+  // Use a ref to track if component is mounted to prevent state updates on unmount
+  const isMounted = useRef(true);
 
-  // Memoize loadProfile to prevent unnecessary re-creations
   const loadProfile = useCallback(async () => {
     if (!session.user) return;
-    try {
-        // Optimistic / Fast load could go here if we cached data
-        const data = await getUserProfile(session.user.id, session.user.email || '');
-        setProfile(data);
-        setEditUsername(data.username);
-    } catch (e) {
-        console.error(e);
-    } finally {
+    
+    // 1. Check Cache first for instant load
+    if (profileCache[session.user.id]) {
+        setProfile(profileCache[session.user.id]);
+        setEditUsername(profileCache[session.user.id].username);
         setLoading(false);
+        return; // Return early if we have data, but maybe trigger a background refresh if needed
+    }
+
+    try {
+        const data = await getUserProfile(session.user.id, session.user.email || '');
+        
+        if (isMounted.current) {
+            // Update Cache
+            profileCache[session.user.id] = data;
+            setProfile(data);
+            setEditUsername(data.username);
+        }
+    } catch (e) {
+        console.error("Profile fetch error", e);
+    } finally {
+        if (isMounted.current) setLoading(false);
     }
   }, [session.user]);
 
   useEffect(() => {
+    isMounted.current = true;
     loadProfile();
+    return () => { isMounted.current = false; };
   }, [loadProfile]);
 
   const validateUsername = (name: string): string | null => {
       const trimmed = name.trim();
       if (trimmed.length < 3) return "Username must be at least 3 characters";
       if (trimmed.length > 20) return "Username must be under 20 characters";
-      // Allow letters, numbers, underscores, and hyphens
       const validRegex = /^[a-zA-Z0-9_-]+$/;
       if (!validRegex.test(trimmed)) return "Only letters, numbers, underscores, and hyphens allowed";
       return null;
@@ -48,11 +98,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
 
   const handleSave = async () => {
     if (!profile) return;
-    
-    // Clear previous errors
     setUsernameError(null);
 
-    // Validate
     const error = validateUsername(editUsername);
     if (error) {
         setUsernameError(error);
@@ -63,14 +110,17 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
     try {
         const updated = { ...profile, username: editUsername.trim() };
         const result = await updateUserProfile(updated);
-        if (result) {
+        
+        if (result && isMounted.current) {
+            // Update Cache
+            profileCache[session.user.id] = result;
             setProfile(result);
             setIsEditing(false);
         }
     } catch (e) {
         alert("Failed to update profile");
     } finally {
-        setSaving(false);
+        if (isMounted.current) setSaving(false);
     }
   };
 
@@ -81,19 +131,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
   };
 
   const handleLogout = async () => {
+      // Clear specific cache on logout if desired, or keep for session duration
       await signOut();
       onLogout();
   };
 
-  if (loading) {
-      return (
-          <div className="flex flex-col justify-center items-center h-[50vh] animate-pulse">
-              <Loader2 size={40} className="animate-spin text-violet-500 mb-4" />
-              <p className="text-slate-500 text-sm font-medium">Loading Profile...</p>
-          </div>
-      );
-  }
-
+  if (loading) return <ProfileSkeleton />;
   if (!profile) return null;
 
   const isPro = profile.subscription_tier !== 'Free';
@@ -101,7 +144,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
   return (
     <div className="w-full max-w-xl mx-auto pb-40 animate-slide-up will-change-transform">
         
-        {/* Profile Card */}
         <div className="relative overflow-hidden bg-slate-900 dark:bg-black rounded-[2.5rem] shadow-2xl shadow-indigo-500/10 border border-slate-800 transition-all duration-300 hover:shadow-indigo-500/20">
             
             {/* Header / Banner */}
@@ -110,7 +152,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
                 <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-fuchsia-500 rounded-full blur-[60px] opacity-50 animate-pulse"></div>
             </div>
 
-            {/* Avatar & Content */}
             <div className="px-8 pb-8 relative">
                 
                 {/* Avatar */}
@@ -215,10 +256,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
 
                     <div className="w-full h-px bg-slate-800/80"></div>
 
-                    {/* Subscription & Credits */}
                     <div className="grid grid-cols-2 gap-4">
-                        
-                        {/* Subscription Tier */}
                         <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition-colors">
                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                 <CreditCard size={40} />
@@ -237,7 +275,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
                             )}
                         </div>
 
-                        {/* Credits */}
                         <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition-colors">
                             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                 <Zap size={40} />
@@ -254,9 +291,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
                                 ></div>
                             </div>
                         </div>
-
                     </div>
-
                 </div>
             </div>
         </div>

@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const REPORT_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
-    summary: { type: Type.STRING, description: "A brief summary of the person's character." },
+    summary: { type: Type.STRING, description: "A brief summary of the person's character (max 3 sentences)." },
     traits: {
       type: Type.ARRAY,
       items: {
@@ -15,7 +15,7 @@ const REPORT_SCHEMA: Schema = {
         properties: {
           name: { type: Type.STRING, description: "Name of the trait (e.g., Openness, Neuroticism)" },
           score: { type: Type.NUMBER, description: "Score from 1 to 10" },
-          description: { type: Type.STRING, description: "Brief explanation of this score for this person" }
+          description: { type: Type.STRING, description: "Brief explanation of this score for this person (1 sentence)" }
         }
       }
     },
@@ -28,7 +28,7 @@ const REPORT_SCHEMA: Schema = {
     redFlags: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Potential warning signs." },
     greenFlags: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Positive signs." },
     trustBuilding: { type: Type.STRING, description: "How to win their trust." },
-    psychologicalProfile: { type: Type.STRING, description: "Deep psychological analysis paragraph." }
+    psychologicalProfile: { type: Type.STRING, description: "Deep psychological analysis paragraph (concise)." }
   },
   required: ["summary", "traits", "communicationStrategies", "datingMessage", "redFlags", "greenFlags", "trustBuilding", "psychologicalProfile"]
 };
@@ -116,6 +116,7 @@ const getLanguageInstruction = (lang: 'english' | 'roman') => {
         - DO NOT write purely in English.
         - DO NOT translate literally. Capture the ESSENCE in Desi style.
         - Example Output: "Yaar, is banday ka masla ye hai ke ye bohot insecure feel karta hai. Isko thoda space do warna ye sar pe charh jayega."
+        - KEEP IT CONCISE. Do not write essays.
         
         Keys in JSON must remain English. Values must be Roman Urdu.
         `;
@@ -130,6 +131,7 @@ const getLanguageInstruction = (lang: 'english' | 'roman') => {
     - NO academic jargon.
     - Keep sentences short, punchy, and clear.
     - Tone: Friendly and direct.
+    - KEEP IT CONCISE. Do not write essays.
     `;
 };
 
@@ -165,7 +167,8 @@ export const analyzePersona = async (
   `;
 
   const modelName = "gemini-3-flash-preview";
-  const thinkingBudget = mode === AnalysisMode.DEEP ? 10240 : 0;
+  // Reduced thinking budget to avoid response truncation/timeout
+  const thinkingBudget = mode === AnalysisMode.DEEP ? 2048 : 0;
   const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
@@ -198,6 +201,8 @@ export const analyzePersona = async (
   const config: any = {
     responseMimeType: "application/json",
     responseSchema: REPORT_SCHEMA,
+    // Explicitly set high output tokens to accommodate JSON schema
+    maxOutputTokens: 32768,
   };
 
   if (thinkingBudget > 0) {
@@ -272,6 +277,7 @@ export const analyzeClientSegmentation = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: SEGMENTATION_SCHEMA,
+        maxOutputTokens: 32768,
       }
     });
 
@@ -332,6 +338,7 @@ export const analyzeCompatibility = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: COMPATIBILITY_SCHEMA,
+        maxOutputTokens: 32768,
       }
     });
 
@@ -377,6 +384,7 @@ export const generateActionPlan = async (
         config: {
         responseMimeType: "application/json",
         responseSchema: PROTOCOL_SCHEMA,
+        maxOutputTokens: 16384,
         }
     });
 
@@ -500,6 +508,7 @@ export const evaluateSimulation = async (
         config: {
         responseMimeType: "application/json",
         responseSchema: SIMULATION_FEEDBACK_SCHEMA,
+        maxOutputTokens: 16384,
         }
     });
 
