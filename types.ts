@@ -1,8 +1,18 @@
+
 export enum AnalysisMode {
   FAST = 'FAST',
   DEEP = 'DEEP',
   B2B = 'B2B',
   COMPATIBILITY = 'COMPATIBILITY'
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  subscription_tier: 'Free' | 'Pro' | 'Enterprise';
+  credits: number;
+  avatar_url?: string;
 }
 
 export interface PersonalityTrait {
@@ -118,4 +128,14 @@ export interface SocialProfile {
   is_verified: boolean;
   raw_posts_text: string; // Concatenated captions for analysis
   scrape_timestamp: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  user_id: string;
+  mode: string;
+  title: string;
+  summary: string;
+  report_data: AnalysisReport | SegmentationReport | CompatibilityReport;
+  created_at: string;
 }

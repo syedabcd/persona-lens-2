@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
@@ -8,15 +8,21 @@ import CompatibilityView from './components/CompatibilityView';
 import ChatInterface from './components/ChatInterface';
 import MonitoringView from './components/MonitoringView';
 import SimulatorInterface from './components/SimulatorInterface';
-import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile } from './types';
+import AuthPage from './components/AuthPage';
+import HistoryView from './components/HistoryView';
+import ProfileView from './components/ProfileView'; // Import the new view
+import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
+import { supabase, saveHistory } from './services/supabaseService';
+import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'input' | 'report' | 'monitoring';
+type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile'; // Added 'profile'
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [view, setView] = useState<ViewState>('landing');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
   
   // State for reports
   const [report, setReport] = useState<AnalysisReport | null>(null);
@@ -29,6 +35,38 @@ const App: React.FC = () => {
   // Monitoring State
   const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
 
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      // Redirect to landing if logged out
+      if (!session) {
+          setView('landing');
+          setActiveTab('home');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleGetStarted = () => {
+    if (session) {
+      setView('input');
+    } else {
+      setView('auth');
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    setView('input');
+  };
+
   const handleAnalyze = async (data: FormData, files: FileData[], mode: AnalysisMode) => {
     setIsAnalyzing(true);
     setReport(null);
@@ -36,6 +74,10 @@ const App: React.FC = () => {
     setCompatibilityReport(null);
 
     try {
+      let resultReport: any = null;
+      let summary = "";
+      let title = "";
+
       if (mode === AnalysisMode.B2B) {
         const result = await analyzeClientSegmentation(
             data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""),
@@ -44,6 +86,10 @@ const App: React.FC = () => {
             data.purpose // Objective
         );
         setSegmentationReport(result);
+        resultReport = result;
+        title = `B2B: ${data.relationship}`;
+        summary = result.overview.substring(0, 150) + "...";
+
       } else if (mode === AnalysisMode.COMPATIBILITY) {
         const result = await analyzeCompatibility(
             data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""), // Target Data
@@ -52,6 +98,10 @@ const App: React.FC = () => {
             data.relationship
         );
         setCompatibilityReport(result);
+        resultReport = result;
+        title = `Compatibility: ${data.relationship}`;
+        summary = result.longTermPrediction.substring(0, 150) + "...";
+
       } else {
         const result = await analyzePersona(
             data.textContext, 
@@ -62,6 +112,14 @@ const App: React.FC = () => {
             data.uploadedContent
         );
         setReport(result);
+        resultReport = result;
+        title = `${data.relationship} - ${data.purpose}`;
+        summary = result.summary.substring(0, 150) + "...";
+      }
+
+      // Save to Supabase History
+      if (session?.user && resultReport) {
+          await saveHistory(session.user.id, mode, title, summary, resultReport);
       }
 
       setView('report');
@@ -74,17 +132,38 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSelectHistory = (item: HistoryItem) => {
+     setReport(null);
+     setSegmentationReport(null);
+     setCompatibilityReport(null);
+
+     if (item.mode === 'B2B') {
+         setSegmentationReport(item.report_data as SegmentationReport);
+     } else if (item.mode === 'COMPATIBILITY') {
+         setCompatibilityReport(item.report_data as CompatibilityReport);
+     } else {
+         setReport(item.report_data as AnalysisReport);
+     }
+     
+     setView('report');
+     setActiveTab('home');
+     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNavbarClick = (tab: string) => {
     setActiveTab(tab);
     if (tab === 'home') {
        if (report || segmentationReport || compatibilityReport) {
          setView('report');
-       } else if (view !== 'input') {
+       } else if (session) {
+         setView('input');
+       } else {
          setView('landing'); 
        }
-    } else if (tab === 'monitoring') {
-        setView('monitoring');
+    } else if (tab === 'profile') {
+        setView('profile');
     }
+    // Note: History logic is handled in render body for 'history' tab check
   };
 
   const resetAnalysis = () => {
@@ -110,6 +189,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+      setSession(null);
+      setView('landing');
+      setActiveTab('home');
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">
       
@@ -123,10 +208,14 @@ const App: React.FC = () => {
       
       <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-10">
         
-        {(view === 'landing' || view === 'input') && activeTab === 'home' && (
+        {activeTab === 'home' && (
           <>
             {view === 'landing' && (
-              <LandingPage onGetStarted={() => setView('input')} />
+              <LandingPage onGetStarted={handleGetStarted} />
+            )}
+
+            {view === 'auth' && (
+              <AuthPage onAuthSuccess={handleAuthSuccess} />
             )}
 
             {view === 'input' && (
@@ -136,10 +225,8 @@ const App: React.FC = () => {
                 onBack={() => setView('landing')}
               />
             )}
-          </>
-        )}
 
-        {view === 'report' && activeTab === 'home' && (
+            {view === 'report' && (
               <div className="animate-slide-up max-w-5xl mx-auto">
                  <div className="mb-6 flex items-center justify-between bg-slate-800/50 backdrop-blur-md p-2 rounded-2xl border border-white/10 sticky top-24 z-20 shadow-sm transition-colors duration-200 ease-out max-w-2xl mx-auto">
                     <button 
@@ -166,28 +253,41 @@ const App: React.FC = () => {
                  {compatibilityReport && <CompatibilityView report={compatibilityReport} />}
                  
               </div>
+            )}
+          </>
         )}
 
-        {view === 'monitoring' && (
+        {/* Profile View Integration */}
+        {activeTab === 'profile' && (
+             <>
+                {!session ? (
+                    <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up text-center">
+                        <h3 className="text-xl font-bold mb-4">Please Sign In</h3>
+                        <p className="text-gray-400 mb-6">You need to be logged in to view your profile.</p>
+                        <button onClick={() => { setActiveTab('home'); setView('auth'); }} className="bg-violet-600 px-6 py-2 rounded-full font-bold">Sign In</button>
+                    </div>
+                ) : (
+                    <ProfileView session={session} onLogout={handleLogout} />
+                )}
+             </>
+        )}
+
+        {activeTab === 'monitoring' && (
             <MonitoringView profiles={monitoredProfiles} />
         )}
 
         {activeTab === 'history' && (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up">
-             <div className="glass-card p-10 rounded-[2rem] text-center max-w-sm mx-auto shadow-xl shadow-black/30">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
-                  <span className="text-2xl">🔒</span>
-                </div>
-                <h3 className="font-bold text-xl text-white mb-2">History Vault</h3>
-                <p className="text-gray-400 leading-relaxed mb-4">Your previous analyses are encrypted and stored locally. Feature coming in the next update.</p>
-                <button 
-                  onClick={() => { setActiveTab('home'); setView('landing'); }}
-                  className="text-violet-400 font-bold text-sm hover:underline"
-                >
-                  Go back to Analyze
-                </button>
-             </div>
-          </div>
+          <>
+            {!session ? (
+               <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up text-center">
+                  <h3 className="text-xl font-bold mb-4">Please Sign In</h3>
+                  <p className="text-gray-400 mb-6">You need to be logged in to view your history.</p>
+                  <button onClick={() => { setActiveTab('home'); setView('auth'); }} className="bg-violet-600 px-6 py-2 rounded-full font-bold">Sign In</button>
+               </div>
+            ) : (
+               <HistoryView userId={session.user.id} onSelectReport={handleSelectHistory} />
+            )}
+          </>
         )}
 
       </main>
