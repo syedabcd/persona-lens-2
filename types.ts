@@ -126,6 +126,15 @@ export interface SocialProfile {
   profile_image: string;
   external_links: string[];
   is_verified: boolean;
+  
+  // Enhanced Data Points
+  location?: string;
+  email?: string;
+  is_business_account?: boolean;
+  business_category?: string;
+  work_history?: string[]; // For LinkedIn
+  education?: string[]; // For LinkedIn
+  
   raw_posts_text: string; // Concatenated captions for analysis
   scrape_timestamp: string;
 }

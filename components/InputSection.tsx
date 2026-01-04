@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { FormData, FileData, AnalysisMode, SocialProfile } from '../types';
 import { scrapePublicProfile } from '../services/scrapingService';
 
@@ -31,7 +31,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
   const [scrapePlatform, setScrapePlatform] = useState('instagram');
   const [scrapeUsername, setScrapeUsername] = useState('');
   const [isScraping, setIsScraping] = useState(false);
-  const [scrapedProfile, setScrapedProfile] = useState<SocialProfile | null>(null);
+  const [scrapedProfiles, setScrapedProfiles] = useState<SocialProfile[]>([]);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
 
   const processFiles = async (files: FileList) => {
@@ -190,31 +190,13 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
   const handleScrape = async () => {
       if (!scrapeUsername) return;
       setIsScraping(true);
-      setScrapedProfile(null);
       setScrapeError(null);
       try {
           const result = await scrapePublicProfile(scrapePlatform, scrapeUsername);
           if (result.success && result.data) {
-              setScrapedProfile(result.data);
-              
-              // Automatically append to text context
-              const scrapeContent = `
-              \n--- SCRAPED SOCIAL PROFILE (${scrapePlatform.toUpperCase()}) ---
-              Username: ${result.data.username}
-              Name: ${result.data.display_name}
-              Bio: ${result.data.bio}
-              Followers: ${result.data.followers} | Following: ${result.data.following}
-              Verified: ${result.data.is_verified}
-              
-              --- RECENT POST CAPTIONS ---
-              ${result.data.raw_posts_text || '(No public posts text found)'}
-              \n-----------------------------------\n
-              `;
-              
-              setFormData(prev => ({
-                  ...prev,
-                  textContext: prev.textContext + scrapeContent
-              }));
+              // Add to the list of profiles instead of replacing
+              setScrapedProfiles(prev => [result.data!, ...prev]);
+              setScrapeUsername(''); // Clear input for convenience
           } else {
               setScrapeError(result.error || "Failed to scrape profile. Ensure it is public.");
           }
@@ -223,6 +205,10 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       } finally {
           setIsScraping(false);
       }
+  };
+
+  const removeProfile = (index: number) => {
+      setScrapedProfiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeMedia = (index: number) => setMediaFiles(prev => prev.filter((_, i) => i !== index));
@@ -234,14 +220,42 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       return;
     }
 
-    const hasText = formData.textContext.length > 0 || formData.uploadedContent.length > 0 || mediaFiles.length > 0;
+    // Aggregate social data internally before sending to analysis
+    // This keeps the UI clean while providing full context to the AI
+    let socialContext = "";
+    if (scrapedProfiles.length > 0) {
+        socialContext = "\n\n=== IMPORTED SOCIAL MEDIA PROFILES ===\n";
+        scrapedProfiles.forEach(p => {
+             socialContext += `
+             \n--- PROFILE: ${p.platform.toUpperCase()} (${p.username}) ---
+             Name: ${p.display_name}
+             Bio: ${p.bio}
+             Stats: ${p.followers} Followers | ${p.following} Following
+             Location: ${p.location || 'N/A'}
+             Work: ${p.work_history?.join(', ') || 'N/A'}
+             Education: ${p.education?.join(', ') || 'N/A'}
+             Email: ${p.email || 'N/A'}
+             
+             --- CONTENT & POSTS ---
+             ${p.raw_posts_text}
+             \n-----------------------------------\n
+             `;
+        });
+    }
+
+    const finalFormData = {
+        ...formData,
+        textContext: formData.textContext + socialContext
+    };
+
+    const hasText = finalFormData.textContext.length > 0 || finalFormData.uploadedContent.length > 0 || mediaFiles.length > 0;
     
     if (!hasText) {
-        alert("No evidence available. Please add manual notes, upload a chat file, or screenshots.");
+        alert("No evidence available. Please add manual notes, upload a chat file, screenshots, or import a social profile.");
         return;
     }
 
-    onAnalyze(formData, mediaFiles.map(f => f.data), mode);
+    onAnalyze(finalFormData, mediaFiles.map(f => f.data), mode);
   };
 
   const isB2B = mode === AnalysisMode.B2B;
@@ -514,26 +528,40 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                                Note: Only retrieves public bio, stats, and recent post captions. Private profiles cannot be accessed.
                            </p>
 
-                           {scrapedProfile && (
-                               <div className="mt-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 flex gap-4 items-start animate-slide-up">
-                                   {scrapedProfile.profile_image && (
-                                       <img src={scrapedProfile.profile_image} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-emerald-200" />
-                                   )}
-                                   <div className="flex-1 min-w-0">
-                                       <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm flex items-center gap-1">
-                                           {scrapedProfile.display_name} 
-                                           {scrapedProfile.is_verified && <CheckCircle size={12} className="fill-emerald-500 text-white" />}
-                                       </h4>
-                                       <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">@{scrapedProfile.username}</p>
-                                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{scrapedProfile.bio}</p>
-                                       <div className="flex gap-3 mt-2 text-[10px] font-mono text-gray-400">
-                                           <span><b>{scrapedProfile.followers}</b> Followers</span>
-                                           <span><b>{scrapedProfile.posts_count}</b> Posts</span>
-                                       </div>
-                                       <div className="mt-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                                           <CheckCircle size={10} /> Data added to analysis context
-                                       </div>
-                                   </div>
+                           {/* Scraped Profiles List (Stack) */}
+                           {scrapedProfiles.length > 0 && (
+                               <div className="space-y-3 mt-4">
+                                   {scrapedProfiles.map((p, idx) => (
+                                        <div key={idx} className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 flex gap-4 items-start animate-slide-up relative group">
+                                            {/* Remove Button */}
+                                            <button 
+                                                onClick={() => removeProfile(idx)}
+                                                className="absolute top-2 right-2 text-emerald-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-white/50 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Remove Profile"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+
+                                            {p.profile_image && (
+                                                <img src={p.profile_image} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-emerald-200" />
+                                            )}
+                                            <div className="flex-1 min-w-0 pr-6">
+                                                <h4 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm flex items-center gap-1">
+                                                    {p.display_name} 
+                                                    {p.is_verified && <CheckCircle size={12} className="fill-emerald-500 text-white" />}
+                                                </h4>
+                                                <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">@{p.username} <span className="opacity-50">• {p.platform}</span></p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{p.bio}</p>
+                                                <div className="flex gap-3 mt-2 text-[10px] font-mono text-gray-400">
+                                                    <span><b>{p.followers}</b> Followers</span>
+                                                    <span><b>{p.posts_count}</b> Posts</span>
+                                                </div>
+                                                <div className="mt-2 text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                                                    <CheckCircle size={10} /> Queued for analysis
+                                                </div>
+                                            </div>
+                                        </div>
+                                   ))}
                                </div>
                            )}
                         </div>
