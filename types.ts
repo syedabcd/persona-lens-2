@@ -62,6 +62,7 @@ export interface FormData {
   textContext: string;
   userContext?: string; // For compatibility mode
   uploadedContent: string; // Content from text files
+  language: 'english' | 'roman'; // Added Language Selection
 }
 
 export interface ChatMessage {

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2, Languages } from 'lucide-react';
 import { FormData, FileData, AnalysisMode, SocialProfile } from '../types';
 import { scrapePublicProfile } from '../services/scrapingService';
 
@@ -16,6 +16,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     textContext: '',
     userContext: '',
     uploadedContent: '',
+    language: 'english', // Default to English
   });
   
   const [activeTab, setActiveTab] = useState<'upload' | 'social'>('upload');
@@ -221,7 +222,6 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     }
 
     // Aggregate social data internally before sending to analysis
-    // This keeps the UI clean while providing full context to the AI
     let socialContext = "";
     if (scrapedProfiles.length > 0) {
         socialContext = "\n\n=== IMPORTED SOCIAL MEDIA PROFILES ===\n";
@@ -264,7 +264,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
   return (
     <div 
         className="w-full max-w-lg mx-auto animate-slide-up pb-20"
-        onPaste={handlePaste} // Enable global paste in container
+        onPaste={handlePaste} 
     >
       
       {/* Back Navigation */}
@@ -347,9 +347,12 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             
             {/* Context Group */}
             <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
-                    {isB2B ? "Market Context" : "Target Profile"}
-                </h3>
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">
+                        {isB2B ? "Market Context" : "Target Profile"}
+                    </h3>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                     <InputField 
                         label={isB2B ? "Industry" : "Relationship"}
@@ -363,6 +366,24 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                         value={formData.purpose}
                         onChange={(v) => setFormData({...formData, purpose: v})}
                     />
+                </div>
+
+                {/* Language Selection */}
+                <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10">
+                         <Languages size={18} />
+                    </div>
+                    <select
+                        value={formData.language}
+                        onChange={(e) => setFormData({...formData, language: e.target.value as 'english' | 'roman'})}
+                        className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/60 dark:border-white/10 rounded-2xl appearance-none outline-none focus:ring-4 focus:ring-violet-100/50 dark:focus:ring-violet-900/30 transition-all text-sm font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:bg-white dark:hover:bg-slate-800"
+                    >
+                        <option value="english">🇬🇧 English (Default)</option>
+                        <option value="roman">🇮🇳/🇵🇰 Roman Urdu/Hindi (Desi Style)</option>
+                    </select>
+                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ArrowRight size={14} className="rotate-90" />
+                    </div>
                 </div>
             </div>
 

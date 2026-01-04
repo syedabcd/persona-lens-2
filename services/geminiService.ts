@@ -101,6 +101,28 @@ const SIMULATION_FEEDBACK_SCHEMA: Schema = {
   required: ["score", "outcome", "strengths", "weaknesses", "tacticalAdvice"]
 };
 
+// --- HELPER FOR LANGUAGE INSTRUCTIONS ---
+const getLanguageInstruction = (lang: 'english' | 'roman') => {
+    if (lang === 'roman') {
+        return `
+        CRITICAL INSTRUCTION FOR OUTPUT LANGUAGE:
+        You MUST generate the content values in "Roman Urdu/Hindi" (Hinglish/Urdish).
+        
+        Tone & Style:
+        - Talk like a smart, observant friend or an expert giving advice to a peer. 
+        - Use words like 'masla', 'scene', 'samajh', 'vibe', 'tension mat lo', 'fundas', 'jugaad', etc.
+        - Mix English terms naturally where appropriate (e.g., "iska communication style thoda aggressive hai").
+        - Do NOT use formal/pure Hindi or Urdu. It should sound like modern Gen-Z/Millennial chat.
+        - The JSON keys must remain in English, but the VALUES (summary, advice, etc.) must be in Roman Urdu/Hindi.
+        - Make it impressive, relatable, and human-like. NOT robotic.
+        `;
+    }
+    return `
+    Output Language: English.
+    Tone: Insightful, professional, psychological, yet accessible and direct.
+    `;
+};
+
 // --- MAIN ANALYSIS FUNCTIONS ---
 
 const handleError = (error: any) => {
@@ -120,7 +142,8 @@ export const analyzePersona = async (
   relationship: string,
   purpose: string,
   mode: AnalysisMode,
-  uploadedContent: string = ""
+  uploadedContent: string = "",
+  language: 'english' | 'roman' = 'english'
 ): Promise<AnalysisReport> => {
   
   const fullContext = `
@@ -133,6 +156,7 @@ export const analyzePersona = async (
 
   const modelName = "gemini-3-flash-preview";
   const thinkingBudget = mode === AnalysisMode.DEEP ? 10240 : 0;
+  const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
     Analyze the following person based on the provided aggregated data (chat logs, screenshots, and notes).
@@ -141,6 +165,8 @@ export const analyzePersona = async (
     - Relationship to User: ${relationship}
     - User's Purpose: ${purpose}
     
+    ${langInstruction}
+
     Data Source:
     ${fullContext}
 
@@ -191,9 +217,11 @@ export const analyzeClientSegmentation = async (
   context: string,
   files: FileData[],
   industry: string,
-  objective: string
+  objective: string,
+  language: 'english' | 'roman' = 'english'
 ): Promise<SegmentationReport> => {
   const modelName = "gemini-3-flash-preview";
+  const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
     You are an expert sales psychologist and B2B strategist.
@@ -202,6 +230,8 @@ export const analyzeClientSegmentation = async (
     - Industry: ${industry}
     - Sales Objective: ${objective}
     
+    ${langInstruction}
+
     Data Source:
     The user has provided text/screenshots containing notes, emails, or interactions with multiple potential clients or leads.
     
@@ -251,9 +281,11 @@ export const analyzeCompatibility = async (
   targetData: string,
   userData: string,
   files: FileData[],
-  relationshipType: string
+  relationshipType: string,
+  language: 'english' | 'roman' = 'english'
 ): Promise<CompatibilityReport> => {
   const modelName = "gemini-3-flash-preview";
+  const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
     You are a relationship psychologist and compatibility expert.
@@ -261,6 +293,8 @@ export const analyzeCompatibility = async (
     Task:
     Compare the personality of "The User" (Person A) with "The Target" (Person B) based on the provided data.
     Determine their compatibility score, synergy areas, and friction points.
+
+    ${langInstruction}
     
     User Context (Person A - The User):
     ${userData}
@@ -305,9 +339,11 @@ export const analyzeCompatibility = async (
 
 export const generateActionPlan = async (
   report: AnalysisReport,
-  goal: string
+  goal: string,
+  language: 'english' | 'roman' = 'english'
 ): Promise<ProtocolPlan> => {
   const modelName = "gemini-3-flash-preview";
+  const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
     Based on the following psychological analysis of a person, create a 7-day action plan (The Daily Protocol) to achieve the specific goal: "${goal}".
@@ -316,6 +352,8 @@ export const generateActionPlan = async (
     Target Traits: ${report.traits.map(t => `${t.name} (${t.score}/10)`).join(', ')}
     Communication Style: ${report.communicationStrategies.join('; ')}
     
+    ${langInstruction}
+
     The plan should be practical, subtle, and psychologically calibrated to this specific person.
     For each day, provide:
     - Focus: A 2-3 word theme.
@@ -352,6 +390,8 @@ export const chatWithPersonaBot = async (
   const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
+  // Detect language hint from context or history (simplified fallback if not explicit, but good to add instructions)
+  // For chat, we can ask it to adapt to the user's input language, but explicitly setting a 'vibe' is good.
   const systemInstruction = `
     You are 'The Strategist', an elite communication expert and conflict negotiator.
     
@@ -359,9 +399,10 @@ export const chatWithPersonaBot = async (
     ${contextStr}
     
     Your Goal: Provide real-time, high-stakes tactical advice to the user.
+    - Adapt your language and tone to match the user's input language (English or Roman Urdu/Hindi).
+    - If the user speaks Roman Urdu, reply in cool, casual Roman Urdu (Hinglish).
     - Do not be generic. Be precise, strategic, and Machiavellian if necessary (but ethical).
     - If the user asks what to say, draft specific messages.
-    - If the user asks about a behavior, explain the hidden psychological motive.
     - Keep responses concise, actionable, and confident.
     
     The user is treating you as a high-end consultant for this relationship.
@@ -401,10 +442,11 @@ export const createSimulationChat = (
     
     INSTRUCTIONS:
     1. Stay completely in character. Adopt their tone, vocabulary, and defense mechanisms.
-    2. If the profile is "Avoidant", be evasive. If "Aggressive", be confrontational. If "Analytical", be cold and logical.
-    3. React naturally to the user. If they say something that would trigger a red flag for this specific personality, react negatively.
-    4. Do not break character. Do not offer advice. Just BE the person.
-    5. Keep responses relatively short, like a real chat or spoken conversation.
+    2. Adapt to the language the user starts with. If they speak Roman Urdu, reply in that style.
+    3. If the profile is "Avoidant", be evasive. If "Aggressive", be confrontational. If "Analytical", be cold and logical.
+    4. React naturally to the user. If they say something that would trigger a red flag for this specific personality, react negatively.
+    5. Do not break character. Do not offer advice. Just BE the person.
+    6. Keep responses relatively short, like a real chat or spoken conversation.
   `;
 
   return ai.chats.create({
@@ -441,6 +483,7 @@ export const evaluateSimulation = async (
     3. Did they trigger any psychological defense mechanisms?
     
     Provide a score (0-100), outcome, strengths, weaknesses, and tactical advice.
+    Output the advice in the same language the user primarily used in the transcript (English or Roman Urdu).
   `;
 
   try {
