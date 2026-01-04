@@ -5,6 +5,7 @@ import { generateActionPlan } from '../services/geminiService';
 
 interface ReportViewProps {
   report: AnalysisReport;
+  language: 'english' | 'roman';
   onChatClick: () => void;
   onSimulateClick: () => void;
   onVigilanceClick: () => void;
@@ -58,7 +59,7 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
   </div>
 );
 
-const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick, onSimulateClick, onVigilanceClick }) => {
+const ReportView: React.FC<ReportViewProps> = ({ report, language, onChatClick, onSimulateClick, onVigilanceClick }) => {
   const [protocol, setProtocol] = useState<ProtocolPlan | null>(null);
   const [protocolLoading, setProtocolLoading] = useState(false);
   const [protocolGoal, setProtocolGoal] = useState("Get a Date");
@@ -66,7 +67,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onChatClick, onSimulate
   const handleGenerateProtocol = async () => {
     setProtocolLoading(true);
     try {
-        const plan = await generateActionPlan(report, protocolGoal);
+        const plan = await generateActionPlan(report, protocolGoal, language);
         setProtocol(plan);
     } catch (e) {
         console.error(e);

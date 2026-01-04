@@ -105,21 +105,31 @@ const SIMULATION_FEEDBACK_SCHEMA: Schema = {
 const getLanguageInstruction = (lang: 'english' | 'roman') => {
     if (lang === 'roman') {
         return `
-        CRITICAL INSTRUCTION FOR OUTPUT LANGUAGE:
-        You MUST generate the content values in "Roman Urdu/Hindi" (Hinglish/Urdish).
+        *** STRICT OUTPUT INSTRUCTION ***
+        LANGUAGE: ROMAN URDU / HINDI (Hinglish/Desi Style).
         
-        Tone & Style:
-        - Talk like a smart, observant friend or an expert giving advice to a peer. 
-        - Use words like 'masla', 'scene', 'samajh', 'vibe', 'tension mat lo', 'fundas', 'jugaad', etc.
-        - Mix English terms naturally where appropriate (e.g., "iska communication style thoda aggressive hai").
-        - Do NOT use formal/pure Hindi or Urdu. It should sound like modern Gen-Z/Millennial chat.
-        - The JSON keys must remain in English, but the VALUES (summary, advice, etc.) must be in Roman Urdu/Hindi.
-        - Make it impressive, relatable, and human-like. NOT robotic.
+        You MUST write ALL values (summary, advice, descriptions) in Casual Roman Urdu.
+        
+        Guidelines:
+        - Use "Desi" vocabulary like: 'Scene', 'Masla', 'Banda', 'Samajh', 'Jugaad', 'Vibe', 'Tension mat lo', 'Chakkar'.
+        - Tone: Like a smart friend gossiping or giving advice.
+        - DO NOT write purely in English.
+        - DO NOT translate literally. Capture the ESSENCE in Desi style.
+        - Example Output: "Yaar, is banday ka masla ye hai ke ye bohot insecure feel karta hai. Isko thoda space do warna ye sar pe charh jayega."
+        
+        Keys in JSON must remain English. Values must be Roman Urdu.
         `;
     }
     return `
-    Output Language: English.
-    Tone: Insightful, professional, psychological, yet accessible and direct.
+    *** STRICT OUTPUT INSTRUCTION ***
+    LANGUAGE: VERY SIMPLE ENGLISH.
+    
+    Guidelines:
+    - Use EASY words that a 12-year-old can understand.
+    - NO complex psychological terms (unless you explain them simply).
+    - NO academic jargon.
+    - Keep sentences short, punchy, and clear.
+    - Tone: Friendly and direct.
     `;
 };
 
@@ -165,14 +175,13 @@ export const analyzePersona = async (
     - Relationship to User: ${relationship}
     - User's Purpose: ${purpose}
     
-    ${langInstruction}
-
     Data Source:
     ${fullContext}
 
     Task:
     Provide a psychological analysis. Identify personality traits (Big 5), communication style, red/green flags, and specific advice on how to interact with them for the stated purpose.
-    Be insightful, direct, and practical.
+    
+    ${langInstruction}
   `;
 
   const parts: any[] = [{ text: prompt }];
@@ -230,8 +239,6 @@ export const analyzeClientSegmentation = async (
     - Industry: ${industry}
     - Sales Objective: ${objective}
     
-    ${langInstruction}
-
     Data Source:
     The user has provided text/screenshots containing notes, emails, or interactions with multiple potential clients or leads.
     
@@ -240,6 +247,8 @@ export const analyzeClientSegmentation = async (
     2. Analyze their language, concerns, and objections.
     3. Segment them into psychological groups based on their negotiation style and buying triggers.
     4. Provide actionable sales strategies for each group.
+
+    ${langInstruction}
     
     Input Data:
     ${context}
@@ -294,8 +303,6 @@ export const analyzeCompatibility = async (
     Compare the personality of "The User" (Person A) with "The Target" (Person B) based on the provided data.
     Determine their compatibility score, synergy areas, and friction points.
 
-    ${langInstruction}
-    
     User Context (Person A - The User):
     ${userData}
     
@@ -303,6 +310,8 @@ export const analyzeCompatibility = async (
     ${targetData}
     
     Relationship Type: ${relationshipType}
+
+    ${langInstruction}
   `;
 
   const parts: any[] = [{ text: prompt }];
@@ -352,13 +361,13 @@ export const generateActionPlan = async (
     Target Traits: ${report.traits.map(t => `${t.name} (${t.score}/10)`).join(', ')}
     Communication Style: ${report.communicationStrategies.join('; ')}
     
-    ${langInstruction}
-
     The plan should be practical, subtle, and psychologically calibrated to this specific person.
     For each day, provide:
     - Focus: A 2-3 word theme.
     - Action: A specific thing to do or say.
     - Tip: A psychological nuance to keep in mind.
+
+    ${langInstruction}
   `;
 
   try {
@@ -390,8 +399,6 @@ export const chatWithPersonaBot = async (
   const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
-  // Detect language hint from context or history (simplified fallback if not explicit, but good to add instructions)
-  // For chat, we can ask it to adapt to the user's input language, but explicitly setting a 'vibe' is good.
   const systemInstruction = `
     You are 'The Strategist', an elite communication expert and conflict negotiator.
     

@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [segmentationReport, setSegmentationReport] = useState<SegmentationReport | null>(null);
   const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport | null>(null);
+  const [resultLanguage, setResultLanguage] = useState<'english' | 'roman'>('english');
   
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
@@ -72,6 +73,7 @@ const App: React.FC = () => {
     setReport(null);
     setSegmentationReport(null);
     setCompatibilityReport(null);
+    setResultLanguage(data.language); // Save language preference
 
     try {
       let resultReport: any = null;
@@ -83,7 +85,8 @@ const App: React.FC = () => {
             data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""),
             files,
             data.relationship, // Industry
-            data.purpose // Objective
+            data.purpose, // Objective
+            data.language // Pass Language
         );
         setSegmentationReport(result);
         resultReport = result;
@@ -95,7 +98,8 @@ const App: React.FC = () => {
             data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""), // Target Data
             data.userContext || '', // User Data
             files,
-            data.relationship
+            data.relationship,
+            data.language // Pass Language
         );
         setCompatibilityReport(result);
         resultReport = result;
@@ -109,7 +113,8 @@ const App: React.FC = () => {
             data.relationship, 
             data.purpose,
             mode,
-            data.uploadedContent
+            data.uploadedContent,
+            data.language // Pass Language
         );
         setReport(result);
         resultReport = result;
@@ -244,6 +249,7 @@ const App: React.FC = () => {
                  {report && (
                     <ReportView 
                         report={report} 
+                        language={resultLanguage}
                         onChatClick={() => setIsChatOpen(true)} 
                         onSimulateClick={() => setIsSimulatorOpen(true)}
                         onVigilanceClick={addToMonitoring}
