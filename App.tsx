@@ -44,7 +44,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check for Admin Route manually since we aren't using React Router
-    if (window.location.pathname === '/admin/admin') {
+    // Added hash check (#admin) as a fallback if server redirects fail
+    if (window.location.pathname === '/admin/admin' || window.location.hash === '#admin') {
         setView('admin');
         return;
     }
