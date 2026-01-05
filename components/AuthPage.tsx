@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseService';
-import { Sparkles, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -13,6 +13,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +27,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           password,
         });
         if (error) throw error;
+        onAuthSuccess();
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -33,18 +35,51 @@ const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         });
         if (error) throw error;
         
-        // If signup is successful but no session (email confirmation required),
-        // we can either show a message or proceed. 
-        // To satisfy "directly go to analyze", we call success immediately.
-        // Note: Supabase project must have "Confirm Email" disabled for auto-login session to exist here.
+        // Check if session exists. If not, email confirmation is required.
+        if (data.user && !data.session) {
+            setVerificationSent(true);
+        } else if (data.session) {
+            // Confirmation disabled, immediate login
+            onAuthSuccess();
+        }
       }
-      onAuthSuccess();
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   };
+
+  if (verificationSent) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 animate-slide-up">
+            <div className="glass-card p-8 md:p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative overflow-hidden text-center">
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
+                    <CheckCircle size={40} className="text-emerald-500" />
+                </div>
+                
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-4">Check Your Inbox</h2>
+                
+                <p className="text-gray-500 dark:text-gray-300 text-sm mb-8 leading-relaxed">
+                    We've sent a verification link to <span className="font-bold text-gray-900 dark:text-white">{email}</span>.
+                    <br/><br/>
+                    Please verify your email address to complete your account setup, then sign in.
+                </p>
+
+                <button 
+                    onClick={() => {
+                        setVerificationSent(false);
+                        setIsLogin(true); // Switch to login mode
+                    }}
+                    className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 p-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-xl hover:shadow-indigo-500/20"
+                >
+                    <ArrowLeft size={20} />
+                    Back to Sign In
+                </button>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 animate-slide-up">

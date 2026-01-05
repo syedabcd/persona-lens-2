@@ -46,17 +46,15 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // Redirect to landing if logged out
-      if (!session) {
-          setView('landing');
-          setActiveTab('home');
-      }
+      // Removed the strict redirect here to allow "Guest" access flow from AuthPage
+      // if (!session) { setView('landing'); ... } 
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const handleGetStarted = () => {
+    // If logged in, go to input. If not, go to auth.
     if (session) {
       setView('input');
     } else {
@@ -65,6 +63,7 @@ const App: React.FC = () => {
   };
 
   const handleAuthSuccess = () => {
+    // User successfully passed Auth screen (either logged in OR signed up)
     setView('input');
   };
 
@@ -122,7 +121,7 @@ const App: React.FC = () => {
         summary = result.summary.substring(0, 150) + "...";
       }
 
-      // Save to Supabase History
+      // Save to Supabase History (Only if user has a session)
       if (session?.user && resultReport) {
           await saveHistory(session.user.id, mode, title, summary, resultReport);
       }
@@ -195,9 +194,11 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-      setSession(null);
-      setView('landing');
-      setActiveTab('home');
+      supabase.auth.signOut().then(() => {
+          setSession(null);
+          setView('landing');
+          setActiveTab('home');
+      });
   };
 
   return (

@@ -637,16 +637,16 @@ interface InputFieldProps {
 
 const InputField = ({ label, placeholder, value, onChange }: InputFieldProps) => {
     return (
-        <div className="group relative">
+        <div className="relative group">
             <input 
                 type="text" 
                 placeholder=" "
-                className="peer w-full p-4 pt-5 pb-3 bg-white/50 dark:bg-slate-900/50 border rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 outline-none text-gray-800 dark:text-gray-100 text-sm font-medium transition-all duration-200 border-white/60 dark:border-white/10 focus:ring-violet-100/50 dark:focus:ring-violet-900/30"
+                className="peer w-full p-4 pt-6 pb-2 bg-white/50 dark:bg-slate-900/50 border rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-4 outline-none text-gray-800 dark:text-gray-100 text-sm font-medium transition-all duration-200 border-white/60 dark:border-white/10 focus:ring-violet-100/50 dark:focus:ring-violet-900/30"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
             />
-            <label className="absolute left-4 top-4 text-gray-400 text-xs transition-all duration-200 peer-focus:-translate-y-2.5 peer-focus:text-[10px] peer-focus:font-bold peer-focus:text-violet-500 dark:peer-focus:text-violet-400 peer-not-placeholder-shown:-translate-y-2.5 peer-not-placeholder-shown:text-[10px] peer-not-placeholder-shown:font-bold pointer-events-none">
-                {label.toUpperCase()}
+            <label className="absolute left-4 top-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-xs peer-placeholder-shown:font-normal peer-placeholder-shown:tracking-normal peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:font-bold peer-focus:tracking-widest peer-focus:text-violet-500 dark:peer-focus:text-violet-400 pointer-events-none">
+                {label}
             </label>
         </div>
     );
