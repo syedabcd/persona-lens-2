@@ -10,13 +10,15 @@ import MonitoringView from './components/MonitoringView';
 import SimulatorInterface from './components/SimulatorInterface';
 import AuthPage from './components/AuthPage';
 import HistoryView from './components/HistoryView';
-import ProfileView from './components/ProfileView'; // Import the new view
+import ProfileView from './components/ProfileView';
+import BlogIndex from './components/BlogIndex';
+import BlogPostView from './components/BlogPost';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 import { supabase, saveHistory } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile'; // Added 'profile'
+type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'blog' | 'blog-post';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -35,6 +37,9 @@ const App: React.FC = () => {
   
   // Monitoring State
   const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
+
+  // Blog State
+  const [selectedPostSlug, setSelectedPostSlug] = useState<string>('');
 
   useEffect(() => {
     // Check active session
@@ -166,6 +171,8 @@ const App: React.FC = () => {
        }
     } else if (tab === 'profile') {
         setView('profile');
+    } else if (tab === 'blog') {
+        setView('blog');
     }
     // Note: History logic is handled in render body for 'history' tab check
   };
@@ -199,6 +206,12 @@ const App: React.FC = () => {
           setView('landing');
           setActiveTab('home');
       });
+  };
+
+  const handleReadPost = (slug: string) => {
+      setSelectedPostSlug(slug);
+      setView('blog-post');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -262,6 +275,21 @@ const App: React.FC = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Blog Views */}
+        {activeTab === 'blog' && (
+            <>
+                {view === 'blog' && (
+                    <BlogIndex onReadPost={handleReadPost} />
+                )}
+                {view === 'blog-post' && (
+                    <BlogPostView 
+                        slug={selectedPostSlug} 
+                        onBack={() => { setView('blog'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    />
+                )}
+            </>
         )}
 
         {/* Profile View Integration */}

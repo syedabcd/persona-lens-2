@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Brain, MessageSquare, ShieldAlert, Sparkles, Lock, CheckCircle, Zap, Heart, Search, FileText, Upload } from 'lucide-react';
+import { ArrowRight, Brain, MessageSquare, ShieldAlert, Sparkles, Lock, CheckCircle, Zap, Heart, Search, FileText, Upload, Globe, User } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -27,7 +27,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </h1>
 
           <p className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed animate-slide-up delay-100 font-medium">
-            Don't guess what they mean. Upload your chat screenshots or paste texts, and our AI will explain their personality, hidden feelings, and tell you exactly what to say next.
+            Don't guess what they mean. Upload chats, paste texts, or import social profiles. Our AI explains their personality, hidden feelings, and tells you exactly what to say next.
           </p>
 
           <div className="animate-slide-up delay-200 relative group z-10">
@@ -64,7 +64,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       </div>
                       <h3 className="text-xl font-bold text-white mb-2">1. Upload Evidence</h3>
                       <p className="text-slate-400 leading-relaxed px-4">
-                          Take screenshots of your chat (WhatsApp, Instagram, etc.) or paste text. You can also add notes.
+                          Take screenshots of your chat, paste text, or <span className="text-white font-semibold">import a public social profile</span> (Instagram, LinkedIn, etc).
                       </p>
                   </div>
 
@@ -75,7 +75,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       </div>
                       <h3 className="text-xl font-bold text-white mb-2">2. AI Analysis</h3>
                       <p className="text-slate-400 leading-relaxed px-4">
-                          Our advanced AI reads between the lines. It looks for patterns, mood, and hidden meanings.
+                          Our advanced AI reads between the lines. It looks for patterns, mood, hidden meanings, and digital footprints.
                       </p>
                   </div>
 
@@ -86,7 +86,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       </div>
                       <h3 className="text-xl font-bold text-white mb-2">3. Get Full Report</h3>
                       <p className="text-slate-400 leading-relaxed px-4">
-                          See their personality traits, red flags, and get a step-by-step plan on how to talk to them.
+                          See their personality traits, red flags, and get a step-by-step plan on how to interact with them.
                       </p>
                   </div>
               </div>
@@ -180,6 +180,52 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                       </li>
                   </ul>
               </div>
+          </div>
+
+          {/* Feature 3: Social Media */}
+          <div className="flex flex-col md:flex-row items-center gap-12">
+            <div className="flex-1 order-2 md:order-1">
+                <div className="inline-flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-wider mb-4">
+                    <Globe size={16} /> Social Intelligence
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-6">No chats? No problem.</h2>
+                <p className="text-slate-400 text-lg leading-relaxed mb-8">
+                    You don't need private messages to understand someone. Import their public social profile, and we'll decode their online persona instantly.
+                </p>
+                <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                        <div className="bg-emerald-500/10 p-1 rounded-full text-emerald-500 mt-1"><CheckCircle size={16} /></div>
+                        <span className="text-slate-300"><strong>Public Data:</strong> Works with Instagram, Twitter/X, and LinkedIn.</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <div className="bg-emerald-500/10 p-1 rounded-full text-emerald-500 mt-1"><CheckCircle size={16} /></div>
+                        <span className="text-slate-300"><strong>Vetting:</strong> Perfect for checking dates or hiring candidates.</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <div className="bg-emerald-500/10 p-1 rounded-full text-emerald-500 mt-1"><CheckCircle size={16} /></div>
+                        <span className="text-slate-300"><strong>Digital Vibe:</strong> Detect narcissism, authenticity, or hidden traits from bio & captions.</span>
+                    </li>
+                </ul>
+            </div>
+            <div className="flex-1 order-1 md:order-2 bg-gradient-to-br from-emerald-900/20 to-slate-900 border border-emerald-500/10 rounded-[2rem] p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                    {/* Visual Representation */}
+                    <div className="space-y-4 relative z-10">
+                        <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex items-center gap-4">
+                            <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center shrink-0">
+                                <User size={24} className="text-slate-400"/>
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-sm">@alex_dev</p>
+                                <p className="text-slate-400 text-xs italic">"Building the future. 🚀 #hustle"</p>
+                            </div>
+                        </div>
+                        <div className="bg-emerald-900/20 p-4 rounded-xl border border-emerald-500/20">
+                            <p className="text-emerald-400 text-xs font-bold mb-1">AI Analysis:</p>
+                            <p className="text-sm text-emerald-100">High Openness, High Conscientiousness. Values achievement but may be prone to burnout.</p>
+                        </div>
+                    </div>
+            </div>
           </div>
 
       </section>

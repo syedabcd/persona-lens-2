@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, History, User } from 'lucide-react';
+import { Sparkles, History, User, BookOpen } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -33,6 +33,18 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
         >
         <History size={16} />
         <span className="font-semibold text-sm hidden sm:inline">History</span>
+        </button>
+
+        <button 
+        onClick={() => setActiveTab('blog')}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 ${
+            activeTab === 'blog' 
+            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md' 
+            : 'text-gray-400 hover:bg-white/10 hover:text-white'
+        }`}
+        >
+        <BookOpen size={16} />
+        <span className="font-semibold text-sm hidden sm:inline">Blog</span>
         </button>
 
         <button 

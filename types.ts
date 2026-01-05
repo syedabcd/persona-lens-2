@@ -1,4 +1,5 @@
 
+
 export enum AnalysisMode {
   FAST = 'FAST',
   DEEP = 'DEEP',
@@ -148,4 +149,16 @@ export interface HistoryItem {
   summary: string;
   report_data: AnalysisReport | SegmentationReport | CompatibilityReport;
   created_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string; // HTML or Markdown
+  image_url: string;
+  author: string;
+  created_at: string;
+  meta_description: string;
 }

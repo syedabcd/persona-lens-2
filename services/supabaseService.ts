@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { AnalysisReport, SegmentationReport, CompatibilityReport, UserProfile } from '../types';
+import { AnalysisReport, SegmentationReport, CompatibilityReport, UserProfile, BlogPost } from '../types';
 
 // Hardcoded credentials from your provided screenshot
 // Trimming to ensure no accidental whitespace copy-paste issues
@@ -153,4 +153,85 @@ export const updateUserProfile = async (profile: UserProfile): Promise<UserProfi
 
 export const signOut = async () => {
     await supabase.auth.signOut();
+};
+
+// --- Blog Functions ---
+
+const SAMPLE_POST: BlogPost = {
+    id: 'sample-1',
+    title: 'How to Use Mindlyt to Understand Digital Personalities',
+    slug: 'how-to-use-mindlyt',
+    excerpt: 'Unlock the secrets of online communication. Learn how Mindlyt uses AI to decode personality traits from chat logs and social profiles.',
+    image_url: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=2000',
+    content: `
+      <p>In the digital age, we interact with more people than ever before, yet we often understand them less. Text messages, emails, and social media comments lack the non-verbal cues—tone of voice, facial expressions, body language—that have guided human interaction for millennia.</p>
+      
+      <h3>The Challenge of Digital Ambiguity</h3>
+      <p>Have you ever stared at a text message wondering, "Are they mad at me?" or "Is this client interested or just polite?" This ambiguity creates anxiety in dating, friction in friendships, and lost opportunities in business.</p>
+      
+      <p>This is where <strong>Mindlyt personality analysis</strong> steps in. By leveraging advanced Large Language Models (LLMs) like Gemini, Mindlyt acts as a psychological translator for your digital life.</p>
+
+      <h3>How Mindlyt Works</h3>
+      <p>Mindlyt isn't just a chatbot. It is a specialized engine designed to detect:</p>
+      <ul>
+        <li><strong>Big 5 Personality Traits:</strong> Is the person high in Openness but low in Conscientiousness?</li>
+        <li><strong>Emotional Subtext:</strong> The hidden feelings behind "I'm fine."</li>
+        <li><strong>Manipulation Patterns:</strong> Early detection of gaslighting or narcissism.</li>
+      </ul>
+
+      <h3>Practical Applications</h3>
+      <p>Whether you are vetting a potential date or trying to close a B2B deal, understanding the *human* on the other side of the screen gives you a massive advantage. Use Mindlyt to draft responses that resonate with their specific psychological profile.</p>
+
+      <blockquote>"Communication is not about what is said, but what is understood."</blockquote>
+      
+      <p>Start your analysis today and stop guessing.</p>
+    `,
+    author: 'Mindlyt Team',
+    created_at: new Date().toISOString(),
+    meta_description: 'Learn how to use Mindlyt for deep personality analysis. Decode digital communication, improve relationships, and optimize B2B sales strategies using AI.'
+};
+
+export const fetchBlogPosts = async (): Promise<BlogPost[]> => {
+    if (!supabaseUrl || !supabaseKey) return [SAMPLE_POST];
+
+    try {
+        const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.warn("Error fetching posts (likely table missing), returning sample.", error);
+            return [SAMPLE_POST];
+        }
+        
+        return data && data.length > 0 ? data : [SAMPLE_POST];
+    } catch (e) {
+        console.error("Blog fetch error:", e);
+        return [SAMPLE_POST];
+    }
+};
+
+export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> => {
+    if (!supabaseUrl || !supabaseKey) {
+        return slug === SAMPLE_POST.slug ? SAMPLE_POST : null;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('slug', slug)
+            .single();
+
+        if (error) {
+             // Fallback for sample if DB fetch fails
+             if (slug === SAMPLE_POST.slug) return SAMPLE_POST;
+             return null;
+        }
+        return data;
+    } catch (e) {
+         if (slug === SAMPLE_POST.slug) return SAMPLE_POST;
+         return null;
+    }
 };
