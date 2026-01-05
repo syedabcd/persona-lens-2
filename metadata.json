@@ -1,5 +1,5 @@
 {
-  "name": "PersonaLens",
+  "name": "MindLyt",
   "description": "An AI-powered psychological analysis tool that interprets chat logs and screenshots to provide deep personality insights, relationship advice, and communication strategies using Gemini 3 Pro.",
   "requestFramePermissions": []
 }
