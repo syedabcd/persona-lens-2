@@ -4,82 +4,172 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mindlyt Blog | Psychology & AI Insights</title>
-    <meta name="description" content="Articles on digital body language, detecting narcissism in texts, and B2B sales psychology." />
+    <meta name="description" content="In-depth articles on digital body language, detecting narcissism in texts, B2B sales psychology, and AI-powered communication strategies." />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }</style>
+    <style>body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; scroll-behavior: smooth; }</style>
   </head>
   <body class="min-h-screen flex flex-col">
 
-    <nav class="fixed w-full z-50 bg-slate-900/80 backdrop-blur border-b border-white/5">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <!-- NAV -->
+    <nav class="fixed w-full z-50 bg-slate-900/90 backdrop-blur border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
             <a href="/" class="text-xl font-bold text-white">Mindlyt <span class="text-slate-500 font-normal">/ Blog</span></a>
-            <a href="/app" class="text-sm font-bold bg-violet-600 px-4 py-2 rounded-full hover:bg-violet-500 transition-colors">Launch App</a>
+            
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+                <a href="/about.html" class="hover:text-white transition-colors">About</a>
+                <a href="/index.html#features" class="hover:text-white transition-colors">Features</a>
+                <a href="/blog.html" class="text-white font-bold">Blog</a>
+                <a href="/app" class="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold hover:bg-violet-50 transition-colors shadow-lg">Launch App</a>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
         </div>
     </nav>
 
-    <main class="flex-1 pt-32 pb-20 px-6 max-w-6xl mx-auto w-full">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 bg-slate-950 z-40 hidden flex-col pt-24 px-8 gap-8 transition-opacity duration-300">
+        <a href="/about.html" class="text-2xl font-bold text-slate-300 hover:text-white">About</a>
+        <a href="/index.html#features" class="text-2xl font-bold text-slate-300 hover:text-white">Features</a>
+        <a href="/blog.html" class="text-2xl font-bold text-white">Blog</a>
+        <a href="/app" class="text-2xl font-bold text-violet-400">Launch App &rarr;</a>
+    </div>
+
+    <main class="flex-1 pt-32 pb-20 px-6 max-w-4xl mx-auto w-full">
         
-        <div class="text-center mb-16">
+        <div class="text-center mb-20">
             <h1 class="text-4xl md:text-6xl font-black text-white mb-6">Digital <span class="text-violet-500">Insights</span></h1>
             <p class="text-xl text-slate-400 max-w-2xl mx-auto">
-                Explore our latest research on personality analysis, AI, and the hidden psychology of online communication.
+                Research on personality analysis, AI, and the hidden psychology of online communication.
             </p>
         </div>
 
-        <!-- STATIC FEATURED POSTS -->
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- BLOG FEED (Single Page SEO) -->
+        <div class="space-y-20">
             
-            <!-- Post 1 (Links to App) -->
-            <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
-                <div class="h-48 bg-slate-800 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Analysis">
+            <!-- Article 1 -->
+            <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-violet-900/10" id="chat-logs">
+                <div class="h-64 md:h-80 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="Analyzing Chat Logs">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
                 </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-violet-400 mb-2 block uppercase tracking-wider">Guide</span>
-                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-violet-300">How to Analyze Chat Logs with AI</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                        Learn the step-by-step process of exporting your WhatsApp or iMessage history and getting a deep psychological breakdown.
-                    </p>
-                    <span class="text-sm font-bold text-white border-b border-violet-500 pb-0.5">Read in App &rarr;</span>
-                </div>
-            </a>
+                <div class="p-8 md:p-12">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-violet-500/10 text-violet-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Guide</span>
+                        <span class="text-slate-500 text-sm">5 min read</span>
+                    </div>
+                    
+                    <h2 class="text-3xl font-black text-white mb-6">How to Analyze Chat Logs with AI</h2>
+                    
+                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
+                        <p>We've all been there: staring at a screenshot of a conversation, sending it to three different group chats, asking, "What did he mean by that?" or "Is she actually interested?"</p>
+                        <p>The problem is that our friends are biased. They want to protect us, or they project their own experiences. <strong>Artificial Intelligence, however, is objective.</strong></p>
+                        
+                        <h3 class="text-white font-bold text-xl mt-8">The Process</h3>
+                        <p>Using Mindlyt, you can export chat logs from WhatsApp or iMessage (as .txt files) or simply upload screenshots. The AI analyzes metadata that humans often miss:</p>
+                        <ul class="list-disc pl-5 space-y-2 marker:text-violet-500">
+                            <li><strong>Response Latency:</strong> Does the time gap between messages indicate enthusiasm or power-play?</li>
+                            <li><strong>Sentiment Volatility:</strong> Are they consistent, or do they oscillate between hot and cold (intermittent reinforcement)?</li>
+                            <li><strong>Linguistic Matching:</strong> Do they mirror your vocabulary? High linguistic style matching (LSM) is a strong predictor of long-term compatibility.</li>
+                        </ul>
 
-             <!-- Post 2 -->
-             <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
-                <div class="h-48 bg-slate-800 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Business">
+                        <p class="mt-4">By analyzing thousands of data points, Mindlyt constructs a "digital psychological profile" that is often more accurate than our own intuition.</p>
+                    </div>
                 </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-blue-400 mb-2 block uppercase tracking-wider">Business</span>
-                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-blue-300">B2B Sales Psychology 101</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                        Stop sending generic cold emails. Use personality segmentation to tailor your pitch to the client's specific buying triggers.
-                    </p>
-                    <span class="text-sm font-bold text-white border-b border-blue-500 pb-0.5">Read in App &rarr;</span>
-                </div>
-            </a>
+            </article>
 
-            <!-- Post 3 -->
-            <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
-                <div class="h-48 bg-slate-800 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Relationships">
+             <!-- Article 2 -->
+             <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10" id="b2b-sales">
+                <div class="h-64 md:h-80 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="B2B Sales Meeting">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
                 </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-rose-400 mb-2 block uppercase tracking-wider">Relationships</span>
-                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-rose-300">5 Signs of Avoidant Attachment in Texts</h2>
-                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                        Are they busy or are they pulling away? Detecting the subtle linguistic patterns of avoidant attachment styles.
-                    </p>
-                    <span class="text-sm font-bold text-white border-b border-rose-500 pb-0.5">Read in App &rarr;</span>
+                <div class="p-8 md:p-12">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Business</span>
+                        <span class="text-slate-500 text-sm">4 min read</span>
+                    </div>
+                    
+                    <h2 class="text-3xl font-black text-white mb-6">B2B Sales Psychology 101: Stop Guessing</h2>
+                    
+                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
+                        <p>Cold emailing is a numbers game, but closing deals is a <strong>psychology game</strong>. If you send the same generic pitch to a CEO who values innovation and a CFO who values risk mitigation, you will lose at least one of them.</p>
+                        
+                        <h3 class="text-white font-bold text-xl mt-8">The 4 Buying Personalities</h3>
+                        <p>Mindlyt's B2B mode categorizes your leads into four distinct psychological segments based on their LinkedIn profiles and email syntax:</p>
+                        <ol class="list-decimal pl-5 space-y-2 marker:text-blue-500">
+                            <li><strong>The Driver:</strong> Brief, direct, results-oriented. <em>Strategy: Be concise, focus on ROI.</em></li>
+                            <li><strong>The Analytical:</strong> Data-driven, cautious. <em>Strategy: Send case studies, whitepapers, and guarantees.</em></li>
+                            <li><strong>The Expressive:</strong> Enthusiastic, big-picture. <em>Strategy: Focus on vision, innovation, and social proof.</em></li>
+                            <li><strong>The Amiable:</strong> Relational, conflict-avoidant. <em>Strategy: Build trust, offer support, don't push too hard.</em></li>
+                        </ol>
+
+                        <p class="mt-4">Tailoring your communication style to match the prospect's personality can increase conversion rates by up to 300%.</p>
+                    </div>
                 </div>
-            </a>
+            </article>
+
+            <!-- Article 3 -->
+            <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-rose-900/10" id="avoidant-attachment">
+                <div class="h-64 md:h-80 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="Relationships">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                </div>
+                <div class="p-8 md:p-12">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Relationships</span>
+                        <span class="text-slate-500 text-sm">6 min read</span>
+                    </div>
+                    
+                    <h2 class="text-3xl font-black text-white mb-6">5 Signs of Avoidant Attachment in Texts</h2>
+                    
+                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
+                        <p>Avoidant attachment is characterized by a fear of intimacy and a tendency to withdraw when a relationship gets too close. In digital communication, this manifests in very specific ways.</p>
+                        
+                        <h3 class="text-white font-bold text-xl mt-8">The Red Flags</h3>
+                        <p>Mindlyt's "Red Flag Detector" often highlights these patterns in chat logs:</p>
+                        <ul class="list-disc pl-5 space-y-2 marker:text-rose-500">
+                            <li><strong>The Fade Away:</strong> Response times gradually increase from minutes to hours to days without explanation.</li>
+                            <li><strong>Vague Future Talk:</strong> Avoiding concrete plans. "Let's see how the week goes" instead of "Let's meet Tuesday."</li>
+                            <li><strong>Deactivating Strategies:</strong> Focusing on flaws or creating distance right after a moment of closeness.</li>
+                            <li><strong>Phantom Exes:</strong> Idealizing a past partner to avoid connecting with a current one.</li>
+                            <li><strong>Textual Minimalism:</strong> Giving one-word answers to emotional texts to shut down intimacy.</li>
+                        </ul>
+
+                        <p class="mt-4">Identifying these patterns early saves you from the "Anxious-Avoidant Trap." Mindlyt helps you spot them so you can decide whether to engage or detach.</p>
+                    </div>
+                </div>
+            </article>
 
         </div>
 
     </main>
+
+    <footer class="border-t border-slate-800 bg-slate-950 py-12 mt-20">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <span class="text-slate-500 text-sm">© 2024 Mindlyt. All rights reserved.</span>
+            <div class="flex gap-6 text-sm text-slate-400">
+                <a href="/about.html" class="hover:text-white">About</a>
+                <a href="/blog.html" class="hover:text-white">Blog</a>
+                <a href="/app" class="hover:text-white">Log In</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+      btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+        menu.classList.toggle('flex');
+      });
+    </script>
   </body>
 </html>

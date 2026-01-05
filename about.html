@@ -14,14 +14,35 @@
   </head>
   <body class="min-h-screen flex flex-col">
 
-    <nav class="fixed w-full z-50 bg-slate-900/80 backdrop-blur border-b border-white/5">
-        <div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+    <!-- NAV -->
+    <nav class="glass-nav fixed w-full z-50 bg-slate-900/90 backdrop-blur border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
             <a href="/" class="text-xl font-bold text-white">Mindlyt</a>
-            <a href="/app" class="text-sm font-bold text-violet-400 hover:text-violet-300">Launch App &rarr;</a>
+            
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+                <a href="/about.html" class="text-white font-bold">About</a>
+                <a href="/index.html#features" class="hover:text-white transition-colors">Features</a>
+                <a href="/blog.html" class="hover:text-white transition-colors">Blog</a>
+                <a href="/app" class="bg-violet-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-violet-500 transition-colors">Launch App</a>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
         </div>
     </nav>
 
-    <main class="flex-1 pt-32 pb-20 px-6 max-w-3xl mx-auto">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 bg-slate-950 z-40 hidden flex-col pt-24 px-8 gap-8 transition-opacity duration-300">
+        <a href="/about.html" class="text-2xl font-bold text-white">About</a>
+        <a href="/index.html#features" class="text-2xl font-bold text-slate-300 hover:text-white">Features</a>
+        <a href="/blog.html" class="text-2xl font-bold text-slate-300 hover:text-white">Blog</a>
+        <a href="/app" class="text-2xl font-bold text-violet-400">Launch App &rarr;</a>
+    </div>
+
+    <main class="flex-1 pt-32 pb-20 px-6 max-w-3xl mx-auto w-full">
         
         <h1 class="text-4xl md:text-5xl font-black text-white mb-8">The Science Behind the Screen.</h1>
         
@@ -58,5 +79,14 @@
         </div>
 
     </main>
+
+    <script>
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+      btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+        menu.classList.toggle('flex');
+      });
+    </script>
   </body>
 </html>
