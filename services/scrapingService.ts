@@ -1,6 +1,6 @@
 import { SocialProfile } from "../types";
+import { getScrapeKey } from "./configManager";
 
-const API_KEY = 'MqJhUz7YKzfl0WoUZlgd0UrTLLl2';
 const BASE_URL = "https://api.scrapecreators.com/v1";
 // Use a CORS proxy to allow browser-based requests to the third-party API
 const PROXY_URL = "https://corsproxy.io/?"; 
@@ -228,6 +228,9 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
         return { success: false, error: "Invalid username format." };
     }
 
+    // Get API Key via Manager
+    const apiKey = getScrapeKey();
+
     // Map platform to ScrapeCreators Endpoint
     let endpoint = "";
     switch (platform.toLowerCase()) {
@@ -242,7 +245,7 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
     }
 
     const targetUrl = new URL(`${BASE_URL}${endpoint}`);
-    targetUrl.searchParams.append("api_key", API_KEY);
+    targetUrl.searchParams.append("api_key", apiKey);
 
     // Using Proxy to bypass CORS in browser environment
     const finalUrl = `${PROXY_URL}${encodeURIComponent(targetUrl.toString())}`;
@@ -251,7 +254,7 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
         const response = await fetch(finalUrl, {
             method: 'GET',
             headers: {
-                'x-api-key': API_KEY, // Redundant but good practice
+                'x-api-key': apiKey, // Redundant but good practice
                 'Accept': 'application/json'
             }
         });

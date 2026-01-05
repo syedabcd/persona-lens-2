@@ -225,7 +225,6 @@ export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> =>
             .single();
 
         if (error) {
-             // Fallback for sample if DB fetch fails
              if (slug === SAMPLE_POST.slug) return SAMPLE_POST;
              return null;
         }
@@ -233,5 +232,36 @@ export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> =>
     } catch (e) {
          if (slug === SAMPLE_POST.slug) return SAMPLE_POST;
          return null;
+    }
+};
+
+// --- Admin Blog Functions ---
+
+export const upsertBlogPost = async (post: Partial<BlogPost>) => {
+    try {
+        const { data, error } = await supabase
+            .from('posts')
+            .upsert(post)
+            .select();
+        
+        if (error) throw error;
+        return data;
+    } catch (e) {
+        console.error("Upsert post error:", e);
+        throw e;
+    }
+};
+
+export const deleteBlogPost = async (id: string) => {
+    try {
+        const { error } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+    } catch (e) {
+        console.error("Delete post error:", e);
+        throw e;
     }
 };

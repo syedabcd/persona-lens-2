@@ -162,3 +162,8 @@ export interface BlogPost {
   created_at: string;
   meta_description: string;
 }
+
+export interface AppConfig {
+  gemini_api_key: string;
+  scrape_api_key: string;
+}

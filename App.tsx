@@ -13,12 +13,13 @@ import HistoryView from './components/HistoryView';
 import ProfileView from './components/ProfileView';
 import BlogIndex from './components/BlogIndex';
 import BlogPostView from './components/BlogPost';
+import AdminPanel from './components/AdminPanel';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 import { supabase, saveHistory } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'blog' | 'blog-post';
+type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'blog' | 'blog-post' | 'admin';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -42,6 +43,12 @@ const App: React.FC = () => {
   const [selectedPostSlug, setSelectedPostSlug] = useState<string>('');
 
   useEffect(() => {
+    // Check for Admin Route manually since we aren't using React Router
+    if (window.location.pathname === '/admin/admin') {
+        setView('admin');
+        return;
+    }
+
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -51,15 +58,12 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // Removed the strict redirect here to allow "Guest" access flow from AuthPage
-      // if (!session) { setView('landing'); ... } 
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const handleGetStarted = () => {
-    // If logged in, go to input. If not, go to auth.
     if (session) {
       setView('input');
     } else {
@@ -68,7 +72,6 @@ const App: React.FC = () => {
   };
 
   const handleAuthSuccess = () => {
-    // User successfully passed Auth screen (either logged in OR signed up)
     setView('input');
   };
 
@@ -77,7 +80,7 @@ const App: React.FC = () => {
     setReport(null);
     setSegmentationReport(null);
     setCompatibilityReport(null);
-    setResultLanguage(data.language); // Save language preference
+    setResultLanguage(data.language); 
 
     try {
       let resultReport: any = null;
@@ -88,9 +91,9 @@ const App: React.FC = () => {
         const result = await analyzeClientSegmentation(
             data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""),
             files,
-            data.relationship, // Industry
-            data.purpose, // Objective
-            data.language // Pass Language
+            data.relationship,
+            data.purpose,
+            data.language 
         );
         setSegmentationReport(result);
         resultReport = result;
@@ -99,11 +102,11 @@ const App: React.FC = () => {
 
       } else if (mode === AnalysisMode.COMPATIBILITY) {
         const result = await analyzeCompatibility(
-            data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""), // Target Data
-            data.userContext || '', // User Data
+            data.textContext + (data.uploadedContent ? `\n\nUPLOADED FILES:\n${data.uploadedContent}` : ""),
+            data.userContext || '',
             files,
             data.relationship,
-            data.language // Pass Language
+            data.language
         );
         setCompatibilityReport(result);
         resultReport = result;
@@ -118,7 +121,7 @@ const App: React.FC = () => {
             data.purpose,
             mode,
             data.uploadedContent,
-            data.language // Pass Language
+            data.language
         );
         setReport(result);
         resultReport = result;
@@ -126,7 +129,6 @@ const App: React.FC = () => {
         summary = result.summary.substring(0, 150) + "...";
       }
 
-      // Save to Supabase History (Only if user has a session)
       if (session?.user && resultReport) {
           await saveHistory(session.user.id, mode, title, summary, resultReport);
       }
@@ -174,7 +176,6 @@ const App: React.FC = () => {
     } else if (tab === 'blog') {
         setView('blog');
     }
-    // Note: History logic is handled in render body for 'history' tab check
   };
 
   const resetAnalysis = () => {
@@ -213,6 +214,11 @@ const App: React.FC = () => {
       setView('blog-post');
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Special Admin View
+  if (view === 'admin') {
+      return <AdminPanel onLogout={() => { window.location.pathname = '/'; setView('landing'); }} />;
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">

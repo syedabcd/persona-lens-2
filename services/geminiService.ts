@@ -1,8 +1,13 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport, CompatibilityReport, SimulationFeedback } from "../types";
+import { getGeminiKey } from "./configManager";
 
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get fresh client instance
+const getAIClient = () => {
+    const key = getGeminiKey();
+    if (!key) throw new Error("Gemini API Key is missing. Please configure it in Settings.");
+    return new GoogleGenAI({ apiKey: key });
+};
 
 const REPORT_SCHEMA: Schema = {
   type: Type.OBJECT,
@@ -157,7 +162,7 @@ export const analyzePersona = async (
   uploadedContent: string = "",
   language: 'english' | 'roman' = 'english'
 ): Promise<AnalysisReport> => {
-  
+  const ai = getAIClient();
   const fullContext = `
     --- UPLOADED TEXT FILES / CHAT LOGS ---
     ${uploadedContent}
@@ -234,6 +239,7 @@ export const analyzeClientSegmentation = async (
   objective: string,
   language: 'english' | 'roman' = 'english'
 ): Promise<SegmentationReport> => {
+  const ai = getAIClient();
   const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
   
@@ -299,6 +305,7 @@ export const analyzeCompatibility = async (
   relationshipType: string,
   language: 'english' | 'roman' = 'english'
 ): Promise<CompatibilityReport> => {
+  const ai = getAIClient();
   const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
   
@@ -358,6 +365,7 @@ export const generateActionPlan = async (
   goal: string,
   language: 'english' | 'roman' = 'english'
 ): Promise<ProtocolPlan> => {
+  const ai = getAIClient();
   const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
 
@@ -404,6 +412,7 @@ export const chatWithPersonaBot = async (
   newMessage: string,
   reportContext: AnalysisReport | null
 ) => {
+  const ai = getAIClient();
   const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
@@ -442,6 +451,7 @@ export const createSimulationChat = (
   reportContext: AnalysisReport,
   goal: string
 ) => {
+  const ai = getAIClient();
   const model = "gemini-3-flash-preview";
   const contextStr = JSON.stringify(reportContext);
 
@@ -478,6 +488,7 @@ export const evaluateSimulation = async (
   goal: string,
   reportContext: AnalysisReport
 ): Promise<SimulationFeedback> => {
+  const ai = getAIClient();
   const modelName = "gemini-3-flash-preview";
 
   const prompt = `
