@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BlogPost } from '../types';
 import { fetchBlogPosts, upsertBlogPost, deleteBlogPost } from '../services/supabaseService';
 import { getStoredKeys, updateKeys } from '../services/configManager';
-import { Lock, Settings, FileText, Plus, Edit2, Trash2, Save, X, LogOut, Image, Key } from 'lucide-react';
+import { Lock, Settings, Plus, Edit2, Trash2, Save, X, LogOut, Image, Key, AlertTriangle } from 'lucide-react';
 
 interface AdminPanelProps {
     onLogout: () => void;
@@ -54,6 +54,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             return;
         }
 
+        // Validation for Image URL length (Prevent Base64 paste)
+        if (editingPost.image_url && editingPost.image_url.length > 2000) {
+            alert("The Image URL is too long! It looks like you pasted raw image data (Base64). Please paste a direct link (URL) to an image hosted on the web (e.g., from Unsplash, Imgur, or your website).");
+            return;
+        }
+
         setIsLoading(true);
         try {
             const postToSave = {
@@ -66,11 +72,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                 meta_description: editingPost.meta_description || ''
             };
             
-            await upsertBlogPost(postToSave);
+            const result = await upsertBlogPost(postToSave);
+            
+            // Check if result returned error-like object if service didn't throw
+            if (result && (result as any).error) {
+                throw new Error((result as any).error.message);
+            }
+
             await loadData(); // Refresh list
             setEditingPost(null);
-        } catch (e) {
-            alert("Failed to save post");
+        } catch (e: any) {
+            console.error(e);
+            alert(`Failed to save post: ${e.message || "Unknown error"}. Check your database connection.`);
         } finally {
             setIsLoading(false);
         }
@@ -180,43 +193,74 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
 
                         {/* Edit Form Modal Overlay */}
                         {editingPost && (
-                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-                                <div className="bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+                                <div className="bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-slide-up">
                                     <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
                                         <h3 className="font-bold text-lg">{editingPost.id ? 'Edit Post' : 'New Post'}</h3>
                                         <button onClick={() => setEditingPost(null)} className="text-slate-500 hover:text-white"><X size={20} /></button>
                                     </div>
                                     <div className="p-6 overflow-y-auto space-y-4">
+                                        
+                                        {/* Main Fields */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Title</label>
+                                                <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Title *</label>
                                                 <input 
-                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-violet-500 outline-none"
                                                     value={editingPost.title || ''}
                                                     onChange={e => setEditingPost({...editingPost, title: e.target.value})}
+                                                    placeholder="Enter post title"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Slug (URL)</label>
+                                                <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Slug (URL) *</label>
                                                 <input 
-                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-violet-500 outline-none"
                                                     value={editingPost.slug || ''}
                                                     onChange={e => setEditingPost({...editingPost, slug: e.target.value})}
+                                                    placeholder="post-url-slug"
                                                 />
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-xs text-slate-500 font-bold uppercase block mb-1 flex items-center gap-2"><Image size={12}/> Image URL</label>
-                                            <input 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm font-mono text-blue-300"
-                                                value={editingPost.image_url || ''}
-                                                onChange={e => setEditingPost({...editingPost, image_url: e.target.value})}
-                                            />
+
+                                        {/* Image Section */}
+                                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                                            <label className="text-xs text-slate-500 font-bold uppercase mb-2 flex items-center gap-2">
+                                                <Image size={12}/> Image URL Link
+                                            </label>
+                                            
+                                            <div className="flex gap-2">
+                                                <input 
+                                                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-mono text-blue-300 focus:border-blue-500 outline-none"
+                                                    value={editingPost.image_url || ''}
+                                                    onChange={e => setEditingPost({...editingPost, image_url: e.target.value})}
+                                                    placeholder="https://example.com/image.jpg"
+                                                />
+                                            </div>
+                                            <div className="flex items-start gap-2 mt-2 text-[10px] text-slate-500">
+                                                <AlertTriangle size={12} className="text-amber-500 mt-0.5" />
+                                                <span>Paste a direct <b>LINK</b> (URL) to an image. <b>Do not paste raw image data</b> (Base64) or the save will fail.</span>
+                                            </div>
+
+                                            {/* Preview */}
+                                            {editingPost.image_url && editingPost.image_url.length < 2000 && (
+                                                <div className="mt-3 relative h-32 w-full rounded-lg overflow-hidden bg-slate-900 border border-slate-800">
+                                                    <img 
+                                                        src={editingPost.image_url} 
+                                                        alt="Preview" 
+                                                        className="w-full h-full object-cover opacity-50 hover:opacity-100 transition-opacity"
+                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                    />
+                                                    <span className="absolute bottom-2 right-2 bg-black/50 px-2 py-1 rounded text-[10px] text-white">Preview</span>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Content Fields */}
                                         <div>
                                             <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Excerpt</label>
                                             <textarea 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm h-20"
+                                                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm h-20 focus:border-violet-500 outline-none"
                                                 value={editingPost.excerpt || ''}
                                                 onChange={e => setEditingPost({...editingPost, excerpt: e.target.value})}
                                             />
@@ -224,7 +268,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                         <div>
                                             <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Content (HTML Support)</label>
                                             <textarea 
-                                                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm font-mono h-40"
+                                                className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm font-mono h-40 focus:border-violet-500 outline-none"
                                                 value={editingPost.content || ''}
                                                 onChange={e => setEditingPost({...editingPost, content: e.target.value})}
                                             />
@@ -233,7 +277,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                              <div>
                                                 <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Author</label>
                                                 <input 
-                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-violet-500 outline-none"
                                                     value={editingPost.author || ''}
                                                     onChange={e => setEditingPost({...editingPost, author: e.target.value})}
                                                 />
@@ -241,7 +285,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                              <div>
                                                 <label className="text-xs text-slate-500 font-bold uppercase block mb-1">Meta Description</label>
                                                 <input 
-                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm"
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-violet-500 outline-none"
                                                     value={editingPost.meta_description || ''}
                                                     onChange={e => setEditingPost({...editingPost, meta_description: e.target.value})}
                                                 />
@@ -249,8 +293,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                         </div>
                                     </div>
                                     <div className="p-4 border-t border-slate-800 bg-slate-950 flex justify-end gap-3">
-                                        <button onClick={() => setEditingPost(null)} className="px-4 py-2 rounded-lg hover:bg-slate-800">Cancel</button>
-                                        <button onClick={handleSavePost} disabled={isLoading} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold">
+                                        <button onClick={() => setEditingPost(null)} className="px-4 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                                        <button onClick={handleSavePost} disabled={isLoading} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                             {isLoading ? 'Saving...' : 'Save Post'}
                                         </button>
                                     </div>
@@ -259,20 +303,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                         )}
 
                         <div className="space-y-3">
+                            {posts.length === 0 && (
+                                <div className="text-center py-10 text-slate-500">
+                                    No posts found. Create one to get started.
+                                </div>
+                            )}
                             {posts.map(post => (
                                 <div key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between group hover:border-violet-500/30 transition-all">
                                     <div className="flex items-center gap-4">
-                                        <img src={post.image_url} className="w-16 h-12 object-cover rounded-lg bg-slate-800" alt="" />
+                                        <div className="w-16 h-12 rounded-lg bg-slate-800 overflow-hidden relative">
+                                             <img src={post.image_url} className="w-full h-full object-cover" alt="" onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Img'} />
+                                        </div>
                                         <div>
-                                            <h4 className="font-bold text-white">{post.title}</h4>
+                                            <h4 className="font-bold text-white group-hover:text-violet-300 transition-colors">{post.title}</h4>
                                             <p className="text-xs text-slate-500 font-mono">/{post.slug}</p>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 opacity-50 group-hover:opacity-100">
-                                        <button onClick={() => setEditingPost(post)} className="p-2 bg-slate-800 hover:bg-blue-600 hover:text-white rounded-lg transition-colors">
+                                    <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={() => setEditingPost(post)} 
+                                            className="p-2 bg-slate-800 hover:bg-blue-600 hover:text-white rounded-lg transition-colors"
+                                            title="Edit Post"
+                                        >
                                             <Edit2 size={16} />
                                         </button>
-                                        <button onClick={() => handleDeletePost(post.id)} className="p-2 bg-slate-800 hover:bg-rose-600 hover:text-white rounded-lg transition-colors">
+                                        <button 
+                                            onClick={() => handleDeletePost(post.id)} 
+                                            className="p-2 bg-slate-800 hover:bg-rose-600 hover:text-white rounded-lg transition-colors"
+                                            title="Delete Post"
+                                        >
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
