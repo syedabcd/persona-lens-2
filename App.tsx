@@ -42,13 +42,29 @@ const App: React.FC = () => {
   // Blog State
   const [selectedPostSlug, setSelectedPostSlug] = useState<string>('');
 
+  // Handle Routing & Session
   useEffect(() => {
-    // Check for Admin Route manually since we aren't using React Router
-    // Added hash check (#admin) as a fallback if server redirects fail
-    if (window.location.pathname === '/admin/admin' || window.location.hash === '#admin') {
-        setView('admin');
-        return;
-    }
+    const checkRoute = () => {
+        const path = window.location.pathname;
+        const hash = window.location.hash;
+        
+        // Check for /admin/admin (ignoring trailing slash) or #admin hash
+        if (path.includes('/admin/admin') || hash === '#admin') {
+            setView('admin');
+            return true;
+        }
+        return false;
+    };
+
+    // Initial Check
+    const isAdmin = checkRoute();
+    if (isAdmin) return;
+
+    // Listen for hash changes (e.g. typing #admin in url bar)
+    const handleHashChange = () => {
+        checkRoute();
+    };
+    window.addEventListener('hashchange', handleHashChange);
 
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -61,7 +77,10 @@ const App: React.FC = () => {
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+        subscription.unsubscribe();
+        window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
 
   const handleGetStarted = () => {
@@ -218,7 +237,7 @@ const App: React.FC = () => {
 
   // Special Admin View
   if (view === 'admin') {
-      return <AdminPanel onLogout={() => { window.location.pathname = '/'; setView('landing'); }} />;
+      return <AdminPanel onLogout={() => { window.location.href = '/'; }} />;
   }
 
   return (
