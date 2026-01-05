@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mindlyt Blog | Psychology & AI Insights</title>
     <meta name="description" content="In-depth articles on digital body language, detecting narcissism in texts, B2B sales psychology, and AI-powered communication strategies." />
+    <meta property="og:title" content="Mindlyt Blog | Psychology & AI Insights" />
+    <meta property="og:description" content="Articles on digital body language, detecting narcissism, and AI communication strategies." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mindlyt.app/blog.html" />
+    <link rel="canonical" href="https://mindlyt.app/blog.html" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
@@ -51,102 +56,68 @@
             </p>
         </div>
 
-        <!-- BLOG FEED (Single Page SEO) -->
-        <div class="space-y-20">
+        <!-- BLOG FEED -->
+        <div class="grid gap-12">
             
-            <!-- Article 1 -->
-            <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-violet-900/10" id="chat-logs">
-                <div class="h-64 md:h-80 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="Analyzing Chat Logs">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-                </div>
-                <div class="p-8 md:p-12">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="bg-violet-500/10 text-violet-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Guide</span>
-                        <span class="text-slate-500 text-sm">5 min read</span>
+            <!-- Link to Article 1 -->
+            <a href="/blog-ai-personality-analysis.html" class="block group">
+                <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl hover:border-violet-500/50 transition-all duration-300">
+                    <div class="h-64 relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Analyzing Chat Logs">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80"></div>
+                        <div class="absolute bottom-6 left-8">
+                            <span class="bg-violet-500/10 text-violet-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3 inline-block">Guide</span>
+                            <h2 class="text-3xl font-black text-white group-hover:text-violet-300 transition-colors">How to Analyze Chat Logs with AI</h2>
+                        </div>
                     </div>
-                    
-                    <h2 class="text-3xl font-black text-white mb-6">How to Analyze Chat Logs with AI</h2>
-                    
-                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
-                        <p>We've all been there: staring at a screenshot of a conversation, sending it to three different group chats, asking, "What did he mean by that?" or "Is she actually interested?"</p>
-                        <p>The problem is that our friends are biased. They want to protect us, or they project their own experiences. <strong>Artificial Intelligence, however, is objective.</strong></p>
-                        
-                        <h3 class="text-white font-bold text-xl mt-8">The Process</h3>
-                        <p>Using Mindlyt, you can export chat logs from WhatsApp or iMessage (as .txt files) or simply upload screenshots. The AI analyzes metadata that humans often miss:</p>
-                        <ul class="list-disc pl-5 space-y-2 marker:text-violet-500">
-                            <li><strong>Response Latency:</strong> Does the time gap between messages indicate enthusiasm or power-play?</li>
-                            <li><strong>Sentiment Volatility:</strong> Are they consistent, or do they oscillate between hot and cold (intermittent reinforcement)?</li>
-                            <li><strong>Linguistic Matching:</strong> Do they mirror your vocabulary? High linguistic style matching (LSM) is a strong predictor of long-term compatibility.</li>
-                        </ul>
+                    <div class="p-8">
+                        <p class="text-slate-400 leading-relaxed mb-4">
+                            Learn how artificial intelligence analyzes response latency, sentiment volatility, and linguistic matching to create accurate psychological profiles from text messages.
+                        </p>
+                        <span class="text-violet-400 font-bold flex items-center gap-2 text-sm group-hover:translate-x-2 transition-transform">Read Article &rarr;</span>
+                    </div>
+                </article>
+            </a>
 
-                        <p class="mt-4">By analyzing thousands of data points, Mindlyt constructs a "digital psychological profile" that is often more accurate than our own intuition.</p>
+             <!-- Link to Article 2 -->
+             <a href="/blog-psychology-of-texting.html" class="block group">
+                <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl hover:border-blue-500/50 transition-all duration-300">
+                    <div class="h-64 relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="B2B Sales Meeting">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80"></div>
+                        <div class="absolute bottom-6 left-8">
+                             <span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3 inline-block">Business</span>
+                            <h2 class="text-3xl font-black text-white group-hover:text-blue-300 transition-colors">B2B Sales Psychology 101</h2>
+                        </div>
                     </div>
-                </div>
-            </article>
+                    <div class="p-8">
+                        <p class="text-slate-400 leading-relaxed mb-4">
+                             Stop sending generic cold emails. Discover the 4 buying personalities (Driver, Analytical, Expressive, Amiable) and how to tailor your pitch to each.
+                        </p>
+                        <span class="text-blue-400 font-bold flex items-center gap-2 text-sm group-hover:translate-x-2 transition-transform">Read Article &rarr;</span>
+                    </div>
+                </article>
+             </a>
 
-             <!-- Article 2 -->
-             <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10" id="b2b-sales">
-                <div class="h-64 md:h-80 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="B2B Sales Meeting">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-                </div>
-                <div class="p-8 md:p-12">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Business</span>
-                        <span class="text-slate-500 text-sm">4 min read</span>
+            <!-- Link to Article 3 -->
+            <a href="/blog-red-flags-in-chat.html" class="block group">
+                <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl hover:border-rose-500/50 transition-all duration-300">
+                    <div class="h-64 relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Relationships">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-80"></div>
+                        <div class="absolute bottom-6 left-8">
+                            <span class="bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3 inline-block">Relationships</span>
+                            <h2 class="text-3xl font-black text-white group-hover:text-rose-300 transition-colors">5 Signs of Avoidant Attachment</h2>
+                        </div>
                     </div>
-                    
-                    <h2 class="text-3xl font-black text-white mb-6">B2B Sales Psychology 101: Stop Guessing</h2>
-                    
-                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
-                        <p>Cold emailing is a numbers game, but closing deals is a <strong>psychology game</strong>. If you send the same generic pitch to a CEO who values innovation and a CFO who values risk mitigation, you will lose at least one of them.</p>
-                        
-                        <h3 class="text-white font-bold text-xl mt-8">The 4 Buying Personalities</h3>
-                        <p>Mindlyt's B2B mode categorizes your leads into four distinct psychological segments based on their LinkedIn profiles and email syntax:</p>
-                        <ol class="list-decimal pl-5 space-y-2 marker:text-blue-500">
-                            <li><strong>The Driver:</strong> Brief, direct, results-oriented. <em>Strategy: Be concise, focus on ROI.</em></li>
-                            <li><strong>The Analytical:</strong> Data-driven, cautious. <em>Strategy: Send case studies, whitepapers, and guarantees.</em></li>
-                            <li><strong>The Expressive:</strong> Enthusiastic, big-picture. <em>Strategy: Focus on vision, innovation, and social proof.</em></li>
-                            <li><strong>The Amiable:</strong> Relational, conflict-avoidant. <em>Strategy: Build trust, offer support, don't push too hard.</em></li>
-                        </ol>
-
-                        <p class="mt-4">Tailoring your communication style to match the prospect's personality can increase conversion rates by up to 300%.</p>
+                    <div class="p-8">
+                        <p class="text-slate-400 leading-relaxed mb-4">
+                            Identify the "Fade Away", vague future talk, and textual minimalism. Learn to spot the digital red flags of avoidant attachment styles early.
+                        </p>
+                        <span class="text-rose-400 font-bold flex items-center gap-2 text-sm group-hover:translate-x-2 transition-transform">Read Article &rarr;</span>
                     </div>
-                </div>
-            </article>
-
-            <!-- Article 3 -->
-            <article class="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shadow-rose-900/10" id="avoidant-attachment">
-                <div class="h-64 md:h-80 relative overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover" alt="Relationships">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-                </div>
-                <div class="p-8 md:p-12">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span class="bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Relationships</span>
-                        <span class="text-slate-500 text-sm">6 min read</span>
-                    </div>
-                    
-                    <h2 class="text-3xl font-black text-white mb-6">5 Signs of Avoidant Attachment in Texts</h2>
-                    
-                    <div class="prose prose-invert prose-lg text-slate-300 leading-relaxed space-y-4">
-                        <p>Avoidant attachment is characterized by a fear of intimacy and a tendency to withdraw when a relationship gets too close. In digital communication, this manifests in very specific ways.</p>
-                        
-                        <h3 class="text-white font-bold text-xl mt-8">The Red Flags</h3>
-                        <p>Mindlyt's "Red Flag Detector" often highlights these patterns in chat logs:</p>
-                        <ul class="list-disc pl-5 space-y-2 marker:text-rose-500">
-                            <li><strong>The Fade Away:</strong> Response times gradually increase from minutes to hours to days without explanation.</li>
-                            <li><strong>Vague Future Talk:</strong> Avoiding concrete plans. "Let's see how the week goes" instead of "Let's meet Tuesday."</li>
-                            <li><strong>Deactivating Strategies:</strong> Focusing on flaws or creating distance right after a moment of closeness.</li>
-                            <li><strong>Phantom Exes:</strong> Idealizing a past partner to avoid connecting with a current one.</li>
-                            <li><strong>Textual Minimalism:</strong> Giving one-word answers to emotional texts to shut down intimacy.</li>
-                        </ul>
-
-                        <p class="mt-4">Identifying these patterns early saves you from the "Anxious-Avoidant Trap." Mindlyt helps you spot them so you can decide whether to engage or detach.</p>
-                    </div>
-                </div>
-            </article>
+                </article>
+            </a>
 
         </div>
 
@@ -155,11 +126,15 @@
     <footer class="border-t border-slate-800 bg-slate-950 py-12 mt-20">
         <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <span class="text-slate-500 text-sm">© 2024 Mindlyt. All rights reserved.</span>
-            <div class="flex gap-6 text-sm text-slate-400">
+            <div class="flex flex-col md:flex-row gap-6 text-sm text-slate-400">
                 <a href="/about.html" class="hover:text-white">About</a>
                 <a href="/blog.html" class="hover:text-white">Blog</a>
                 <a href="/app" class="hover:text-white">Log In</a>
+                <a href="/disclaimer.html" class="hover:text-white">Disclaimer</a>
             </div>
+        </div>
+        <div class="max-w-6xl mx-auto px-6 mt-6 text-center md:text-left text-xs text-slate-600">
+           <p>Disclaimer: This tool is for educational and informational purposes only. It is not a substitute for professional psychological advice or diagnosis.</p>
         </div>
     </footer>
 
