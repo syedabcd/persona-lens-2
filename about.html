@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Mindlyt | The Science of AI Personality Analysis</title>
+    <meta name="description" content="Learn how Mindlyt uses the Big 5 Personality model and Gemini AI to decode digital communication patterns." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }</style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+
+    <nav class="fixed w-full z-50 bg-slate-900/80 backdrop-blur border-b border-white/5">
+        <div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold text-white">Mindlyt</a>
+            <a href="/app" class="text-sm font-bold text-violet-400 hover:text-violet-300">Launch App &rarr;</a>
+        </div>
+    </nav>
+
+    <main class="flex-1 pt-32 pb-20 px-6 max-w-3xl mx-auto">
+        
+        <h1 class="text-4xl md:text-5xl font-black text-white mb-8">The Science Behind the Screen.</h1>
+        
+        <div class="prose prose-invert prose-lg">
+            <p class="text-xl text-slate-300 leading-relaxed">
+                Mindlyt is not just a chatbot. It is a sophisticated psychological inference engine designed to bridge the gap between digital text and human intent.
+            </p>
+
+            <h3 class="text-violet-400 font-bold mt-12 mb-4">How it Works</h3>
+            <p>
+                We utilize Google's Gemini 3 Pro Large Language Model, fine-tuned with prompts based on the <strong>Big Five Personality Traits (OCEAN)</strong> model. By analyzing syntax, word choice, emoji usage, and response latency in your uploaded chats, Mindlyt constructs a probabilistic profile of the speaker.
+            </p>
+
+            <h3 class="text-violet-400 font-bold mt-12 mb-4">Data Privacy & Ethics</h3>
+            <p>
+                Your trust is paramount. Mindlyt operates on a "Zero-Retention" policy for sensitive uploads.
+            </p>
+            <ul class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4 my-8">
+                <li class="flex gap-3"><span class="text-emerald-500">✓</span> Chat logs are processed in memory and never saved to a database.</li>
+                <li class="flex gap-3"><span class="text-emerald-500">✓</span> Analysis reports are stored securely only for your history.</li>
+                <li class="flex gap-3"><span class="text-emerald-500">✓</span> We do not sell user data to third parties.</li>
+            </ul>
+
+            <h3 class="text-violet-400 font-bold mt-12 mb-4">Disclaimer</h3>
+            <p class="text-sm text-slate-400">
+                Mindlyt is an educational tool for communication strategy. It is not a diagnostic tool and should not be used as a substitute for professional psychological or medical advice.
+            </p>
+        </div>
+
+        <div class="mt-16 pt-8 border-t border-slate-800 flex justify-center">
+            <a href="/app" class="bg-white text-slate-900 px-8 py-3 rounded-full font-bold hover:scale-105 transition-transform">
+                Start Your First Analysis
+            </a>
+        </div>
+
+    </main>
+  </body>
+</html>

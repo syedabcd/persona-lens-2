@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mindlyt Blog | Psychology & AI Insights</title>
+    <meta name="description" content="Articles on digital body language, detecting narcissism in texts, and B2B sales psychology." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { background-color: #020617; color: #f1f5f9; font-family: 'Inter', sans-serif; }</style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+
+    <nav class="fixed w-full z-50 bg-slate-900/80 backdrop-blur border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold text-white">Mindlyt <span class="text-slate-500 font-normal">/ Blog</span></a>
+            <a href="/app" class="text-sm font-bold bg-violet-600 px-4 py-2 rounded-full hover:bg-violet-500 transition-colors">Launch App</a>
+        </div>
+    </nav>
+
+    <main class="flex-1 pt-32 pb-20 px-6 max-w-6xl mx-auto w-full">
+        
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-black text-white mb-6">Digital <span class="text-violet-500">Insights</span></h1>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+                Explore our latest research on personality analysis, AI, and the hidden psychology of online communication.
+            </p>
+        </div>
+
+        <!-- STATIC FEATURED POSTS -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- Post 1 (Links to App) -->
+            <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
+                <div class="h-48 bg-slate-800 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Analysis">
+                </div>
+                <div class="p-6">
+                    <span class="text-xs font-bold text-violet-400 mb-2 block uppercase tracking-wider">Guide</span>
+                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-violet-300">How to Analyze Chat Logs with AI</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                        Learn the step-by-step process of exporting your WhatsApp or iMessage history and getting a deep psychological breakdown.
+                    </p>
+                    <span class="text-sm font-bold text-white border-b border-violet-500 pb-0.5">Read in App &rarr;</span>
+                </div>
+            </a>
+
+             <!-- Post 2 -->
+             <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
+                <div class="h-48 bg-slate-800 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Business">
+                </div>
+                <div class="p-6">
+                    <span class="text-xs font-bold text-blue-400 mb-2 block uppercase tracking-wider">Business</span>
+                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-blue-300">B2B Sales Psychology 101</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                        Stop sending generic cold emails. Use personality segmentation to tailor your pitch to the client's specific buying triggers.
+                    </p>
+                    <span class="text-sm font-bold text-white border-b border-blue-500 pb-0.5">Read in App &rarr;</span>
+                </div>
+            </a>
+
+            <!-- Post 3 -->
+            <a href="/app#blog" class="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all">
+                <div class="h-48 bg-slate-800 relative overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" alt="Relationships">
+                </div>
+                <div class="p-6">
+                    <span class="text-xs font-bold text-rose-400 mb-2 block uppercase tracking-wider">Relationships</span>
+                    <h2 class="text-xl font-bold text-white mb-3 group-hover:text-rose-300">5 Signs of Avoidant Attachment in Texts</h2>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                        Are they busy or are they pulling away? Detecting the subtle linguistic patterns of avoidant attachment styles.
+                    </p>
+                    <span class="text-sm font-bold text-white border-b border-rose-500 pb-0.5">Read in App &rarr;</span>
+                </div>
+            </a>
+
+        </div>
+
+    </main>
+  </body>
+</html>

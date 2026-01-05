@@ -23,7 +23,8 @@ type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profi
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [view, setView] = useState<ViewState>('landing');
+  // Default to 'auth' because the static landing page handles the 'landing' view now.
+  const [view, setView] = useState<ViewState>('auth');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   
@@ -69,6 +70,9 @@ const App: React.FC = () => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        setView('input');
+      }
     });
 
     const {
@@ -189,7 +193,8 @@ const App: React.FC = () => {
        } else if (session) {
          setView('input');
        } else {
-         setView('landing'); 
+         // Fallback to Auth instead of Landing
+         setView('auth'); 
        }
     } else if (tab === 'profile') {
         setView('profile');
@@ -224,7 +229,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
       supabase.auth.signOut().then(() => {
           setSession(null);
-          setView('landing');
+          setView('auth'); // Go to Auth instead of Landing
           setActiveTab('home');
       });
   };
@@ -267,7 +272,7 @@ const App: React.FC = () => {
               <InputSection 
                 onAnalyze={handleAnalyze} 
                 isAnalyzing={isAnalyzing} 
-                onBack={() => setView('landing')}
+                onBack={() => setView('auth')}
               />
             )}
 
