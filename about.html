@@ -72,4 +72,32 @@
             </ul>
 
             <h3 class="text-violet-400 font-bold mt-12 mb-4">Disclaimer</h3>
-            <p class="text-sm text
+            <p class="text-sm text-slate-400">
+                Mindlyt provides educational insights based on linguistic patterns. It is NOT a substitute for professional psychological or medical advice.
+            </p>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-800 bg-slate-950 py-12 mt-20">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <span class="text-slate-500 text-sm">© 2024 Mindlyt. All rights reserved.</span>
+            <div class="flex flex-col md:flex-row gap-6 text-sm text-slate-400">
+                <a href="/about" class="hover:text-white">About</a>
+                <a href="/blog" class="hover:text-white">Blog</a>
+                <a href="/app" class="hover:text-white">Log In</a>
+                <a href="/disclaimer" class="hover:text-white">Disclaimer</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+      const btn = document.getElementById('mobile-menu-btn');
+      const menu = document.getElementById('mobile-menu');
+      btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+        menu.classList.toggle('flex');
+      });
+    </script>
+  </body>
+</html>
