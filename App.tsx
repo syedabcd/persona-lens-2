@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
@@ -12,6 +13,8 @@ import AuthPage from './components/AuthPage';
 import HistoryView from './components/HistoryView';
 import ProfileView from './components/ProfileView';
 import AdminPanel from './components/AdminPanel';
+import BlogIndex from './components/BlogIndex';
+import BlogPostView from './components/BlogPost';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 import { supabase, saveHistory } from './services/supabaseService';
@@ -19,9 +22,9 @@ import { Session } from '@supabase/supabase-js';
 
 type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
 
-const App: React.FC = () => {
+// The Main App Component containing the tool logic
+const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-  // Default to 'auth' because the static landing page handles the 'landing' view now.
   const [view, setView] = useState<ViewState>('auth');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -38,34 +41,20 @@ const App: React.FC = () => {
   // Monitoring State
   const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
 
-  // Handle Routing & Session
+  const location = useLocation();
+
   useEffect(() => {
-    const checkRoute = () => {
-        const path = window.location.pathname;
-        const hash = window.location.hash;
-        
-        // Check for /admin/admin (ignoring trailing slash) or #admin hash
-        if (path.includes('/admin/admin') || hash === '#admin') {
-            setView('admin');
-            return true;
-        }
-        return false;
-    };
-
-    // Initial Check
-    const isAdmin = checkRoute();
-    if (isAdmin) return;
-
-    // Listen for hash changes (e.g. typing #admin in url bar)
-    const handleHashChange = () => {
-        checkRoute();
-    };
-    window.addEventListener('hashchange', handleHashChange);
+    // Check for admin route hash
+    if (location.hash === '#admin') {
+        setView('admin');
+        return;
+    }
 
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) {
+      // If user is logged in, default to input view
+      if (session && view === 'auth') {
         setView('input');
       }
     });
@@ -74,11 +63,13 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session && view === 'auth') {
+        setView('input');
+      }
     });
 
     return () => {
         subscription.unsubscribe();
-        window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
@@ -188,7 +179,6 @@ const App: React.FC = () => {
        } else if (session) {
          setView('input');
        } else {
-         // Fallback to Auth instead of Landing
          setView('auth'); 
        }
     } else if (tab === 'profile') {
@@ -222,25 +212,17 @@ const App: React.FC = () => {
   const handleLogout = () => {
       supabase.auth.signOut().then(() => {
           setSession(null);
-          setView('auth'); // Go to Auth instead of Landing
+          setView('auth');
           setActiveTab('home');
       });
   };
 
-  // Special Admin View
   if (view === 'admin') {
       return <AdminPanel onLogout={() => { window.location.href = '/'; }} />;
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">
-      
-      <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
-         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob bg-violet-900/20"></div>
-         <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[100px] animate-blob delay-200 bg-indigo-900/20"></div>
-         <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob delay-700 bg-fuchsia-900/20"></div>
-      </div>
-
+    <>
       <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
       
       <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-10">
@@ -337,7 +319,28 @@ const App: React.FC = () => {
       {isSimulatorOpen && report && (
         <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
       )}
-    </div>
+    </>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">
+        {/* Animated Background Blobs */}
+        <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
+           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob bg-violet-900/20"></div>
+           <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[100px] animate-blob delay-200 bg-indigo-900/20"></div>
+           <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob delay-700 bg-fuchsia-900/20"></div>
+        </div>
+
+        <Routes>
+            <Route path="/blog" element={<BlogIndex />} />
+            <Route path="/blog/:slug" element={<BlogPostView />} />
+            <Route path="/*" element={<MainApp />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 };
 

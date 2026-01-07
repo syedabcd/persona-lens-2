@@ -54,6 +54,8 @@
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
+    "react-helmet-async": "https://esm.sh/react-helmet-async@2.0.4",
     "path": "https://esm.sh/path@^0.12.7",
     "url": "https://esm.sh/url@^0.11.4"
   }
@@ -72,7 +74,7 @@
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
                 <a href="/about" class="hover:text-white transition-colors">About</a>
-                <a href="#features" class="hover:text-white transition-colors">Features</a>
+                <a href="/#features" class="hover:text-white transition-colors">Features</a>
                 <a href="/blog" class="hover:text-white transition-colors">Blog</a>
                 <a href="/app" class="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold hover:bg-violet-50 transition-colors shadow-lg hover:shadow-violet-500/20">Launch App</a>
             </div>
@@ -92,209 +94,9 @@
         <a href="/app" class="text-2xl font-bold text-violet-400">Launch App &rarr;</a>
     </div>
 
-    <!-- HERO -->
-    <main class="flex-col items-center justify-center pt-32 pb-20 px-6 relative overflow-hidden">
-        
-        <!-- Background Blobs -->
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-            <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] bg-violet-900/30 animate-[float_20s_infinite_ease-in-out]"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] bg-indigo-900/30 animate-[float_15s_infinite_ease-in-out_reverse]"></div>
-        </div>
+    <!-- ROOT (React Mount) -->
+    <div id="root"></div>
 
-        <div class="relative z-10 text-center max-w-4xl mx-auto mb-20">
-            <div class="inline-block mb-6 px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-widest">
-                AI Psychology Engine v2.0
-            </div>
-            
-            <h1 class="text-5xl md:text-7xl font-black text-white tracking-tighter mb-8 leading-[1.1]">
-                Understand <br />
-                <span class="gradient-text">People Better.</span>
-            </h1>
-
-            <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Don't guess what they mean. Upload chats, emails, or profiles. Our AI decodes their personality, hidden subtext, and tells you exactly how to respond.
-            </p>
-
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="/app" class="px-8 py-4 bg-white text-slate-900 rounded-full font-bold text-lg shadow-xl shadow-violet-500/20 hover:scale-105 transition-transform flex items-center gap-2 w-full sm:w-auto justify-center">
-                    Start Analysis Free
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                </a>
-                <a href="/about" class="px-8 py-4 bg-slate-800 text-white rounded-full font-bold text-lg border border-slate-700 hover:bg-slate-700 transition-colors w-full sm:w-auto justify-center">
-                    About Mindlyt
-                </a>
-            </div>
-        </div>
-
-        <!-- HOW TO USE / STEP BY STEP -->
-        <section id="how-it-works" class="py-20 relative z-10">
-            <div class="max-w-6xl mx-auto">
-                <div class="text-center mb-16">
-                    <h2 class="text-3xl font-bold text-white mb-4">How to Use Mindlyt</h2>
-                    <p class="text-slate-400">Three simple steps to decode any personality.</p>
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-8">
-                    <!-- Step 1 -->
-                    <div class="feature-card p-8 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-xl -mr-10 -mt-10"></div>
-                        <div class="text-4xl font-black text-slate-800 mb-4 opacity-50">01</div>
-                        <h3 class="text-xl font-bold text-white mb-3">Upload Evidence</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                            Mindlyt accepts multiple formats. You don't need to type everything out.
-                        </p>
-                        <ul class="text-sm text-slate-300 space-y-2">
-                            <li class="flex items-center gap-2"><span class="text-violet-400">✓</span> <strong>Screenshots:</strong> Drag & drop chat images.</li>
-                            <li class="flex items-center gap-2"><span class="text-violet-400">✓</span> <strong>Text Files:</strong> Upload .txt or .pdf logs.</li>
-                            <li class="flex items-center gap-2"><span class="text-violet-400">✓</span> <strong>Social Import:</strong> Paste a public Instagram or LinkedIn URL.</li>
-                        </ul>
-                    </div>
-
-                    <!-- Step 2 -->
-                    <div class="feature-card p-8 rounded-3xl relative overflow-hidden group">
-                         <div class="absolute top-0 right-0 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-xl -mr-10 -mt-10"></div>
-                        <div class="text-4xl font-black text-slate-800 mb-4 opacity-50">02</div>
-                        <h3 class="text-xl font-bold text-white mb-3">Select Analysis Mode</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                            Choose the lens through which the AI analyzes the data.
-                        </p>
-                         <ul class="text-sm text-slate-300 space-y-2">
-                            <li class="flex items-center gap-2"><span class="text-fuchsia-400">✓</span> <strong>Deep Mode:</strong> Full psychological profile (Big 5 Traits).</li>
-                            <li class="flex items-center gap-2"><span class="text-fuchsia-400">✓</span> <strong>Match Mode:</strong> Compare your personality with theirs.</li>
-                            <li class="flex items-center gap-2"><span class="text-fuchsia-400">✓</span> <strong>B2B Mode:</strong> For sales negotiation and client grouping.</li>
-                        </ul>
-                    </div>
-
-                    <!-- Step 3 -->
-                    <div class="feature-card p-8 rounded-3xl relative overflow-hidden group">
-                         <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl -mr-10 -mt-10"></div>
-                        <div class="text-4xl font-black text-slate-800 mb-4 opacity-50">03</div>
-                        <h3 class="text-xl font-bold text-white mb-3">Get Strategy</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-4">
-                            Receive a comprehensive report generated by Gemini 3 Pro.
-                        </p>
-                         <ul class="text-sm text-slate-300 space-y-2">
-                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> <strong>Red Flags:</strong> Detect hidden warnings.</li>
-                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> <strong>Drafts:</strong> Get exact text message replies.</li>
-                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> <strong>Simulator:</strong> Practice the conversation with AI.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FEATURE DEEP DIVE -->
-        <section id="features" class="py-20 relative z-10">
-             <div class="max-w-6xl mx-auto px-6">
-                <div class="grid md:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <span class="text-rose-400 font-bold uppercase tracking-widest text-xs mb-2 block">Dating & Relationships</span>
-                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Is this a Red Flag?</h2>
-                        <p class="text-slate-400 text-lg mb-6 leading-relaxed">
-                            Stop screenshotting chats to your friends asking "What does this mean?". Our AI is objective, trained on psychology, and never gets tired.
-                        </p>
-                        <div class="space-y-4">
-                            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                                <h4 class="font-bold text-white text-sm mb-1">Detect Narcissism</h4>
-                                <p class="text-slate-400 text-sm">Identifies patterns of gaslighting, love bombing, and self-centered phrasing.</p>
-                            </div>
-                            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                                <h4 class="font-bold text-white text-sm mb-1">Attachment Style</h4>
-                                <p class="text-slate-400 text-sm">Determine if they are Anxious, Avoidant, or Secure based on response latency and tone.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="relative">
-                        <div class="absolute inset-0 bg-gradient-to-r from-rose-500 to-orange-500 rounded-full blur-[100px] opacity-20"></div>
-                        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 relative">
-                            <div class="flex items-start gap-4 mb-6">
-                                <div class="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0"></div>
-                                <div class="bg-slate-800 p-3 rounded-r-xl rounded-bl-xl text-sm text-slate-300">
-                                    "I'm just really busy right now with work, I don't have time to text all day like you do."
-                                </div>
-                            </div>
-                            <div class="bg-rose-900/20 border border-rose-500/30 p-4 rounded-xl">
-                                <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase mb-2">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    Analysis: Deflection & Superiority
-                                </div>
-                                <p class="text-rose-100 text-sm">
-                                    This response minimizes your needs ("like you do") to establish dominance. Classic avoidant devaluation tactic.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                 <div class="grid md:grid-cols-2 gap-12 items-center mt-24">
-                     <div class="order-2 md:order-1 relative">
-                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur-[100px] opacity-20"></div>
-                        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 relative">
-                            <div class="mb-4">
-                                <p class="text-xs text-slate-500 uppercase font-bold mb-2">Incoming Email</p>
-                                <div class="bg-slate-800 p-3 rounded-lg text-sm text-slate-300">
-                                    "Your proposal looks standard, but we're concerned about the long-term viability of this implementation timeline..."
-                                </div>
-                            </div>
-                            <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-xl">
-                                <div class="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase mb-2">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                                    Buying Trigger: Risk Aversion
-                                </div>
-                                <p class="text-blue-100 text-sm">
-                                    Client is analytical. Do not offer discounts. Offer guarantees, case studies, and a phased implementation plan.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="order-1 md:order-2">
-                        <span class="text-blue-400 font-bold uppercase tracking-widest text-xs mb-2 block">B2B & Sales</span>
-                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Negotiate Like a Pro</h2>
-                        <p class="text-slate-400 text-lg mb-6 leading-relaxed">
-                            Analyze client emails to determine their psychological buying triggers. Are they motivated by innovation, safety, or status?
-                        </p>
-                        <div class="space-y-4">
-                            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                                <h4 class="font-bold text-white text-sm mb-1">Client Segmentation</h4>
-                                <p class="text-slate-400 text-sm">Upload interaction history for 50+ clients and have AI group them by negotiation style.</p>
-                            </div>
-                            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                                <h4 class="font-bold text-white text-sm mb-1">Response Drafter</h4>
-                                <p class="text-slate-400 text-sm">Get precise email drafts tailored to the specific psychological profile of the recipient.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- CTA -->
-        <div class="mt-16 text-center">
-            <h2 class="text-3xl font-bold text-white mb-6">Ready to see the truth?</h2>
-             <a href="/app" class="px-10 py-5 bg-white text-slate-900 rounded-full font-bold text-xl shadow-xl shadow-violet-500/20 hover:scale-105 transition-transform inline-flex items-center gap-2 w-full sm:w-auto justify-center">
-                Launch App
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </a>
-            <p class="text-slate-500 text-sm mt-4">Free to start. No credit card required.</p>
-        </div>
-
-    </main>
-
-    <footer class="border-t border-slate-800 bg-slate-950 py-12">
-        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <span class="text-slate-500 text-sm">© 2024 Mindlyt. All rights reserved.</span>
-            <div class="flex flex-col md:flex-row gap-6 text-sm text-slate-400">
-                <a href="/about" class="hover:text-white">About</a>
-                <a href="/blog" class="hover:text-white">Blog</a>
-                <a href="/app" class="hover:text-white">Log In</a>
-                <a href="/disclaimer" class="hover:text-white">Disclaimer</a>
-            </div>
-        </div>
-        <div class="max-w-6xl mx-auto px-6 mt-6 text-center md:text-left text-xs text-slate-600">
-           <p>Disclaimer: This tool is for educational and informational purposes only. It is not a substitute for professional psychological advice or diagnosis.</p>
-        </div>
-    </footer>
-    
     <script>
       const btn = document.getElementById('mobile-menu-btn');
       const menu = document.getElementById('mobile-menu');
