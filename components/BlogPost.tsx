@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { blogPosts, BlogPost } from '../src/data/blogData';
+import { blogPosts } from '../src/data/blogData';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Calendar, User, Share2, ArrowRight } from 'lucide-react';
 
@@ -8,12 +8,14 @@ const BlogPostView: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = blogPosts.find(p => p.slug === slug);
 
-  // Find related posts based on relatedSlugs
-  const relatedPosts = post ? blogPosts.filter(p => post.relatedSlugs.includes(p.slug)) : [];
+  // Filter related posts based on relatedSlugs or fall back to just excluding current post
+  const relatedPosts = post && post.relatedSlugs.length > 0 
+      ? blogPosts.filter(p => post.relatedSlugs.includes(p.slug))
+      : blogPosts.filter(p => p.slug !== slug).slice(0, 2);
 
   if (!post) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-40 min-h-[60vh]">
         <Helmet>
             <title>Post Not Found | Mindlyt</title>
             <meta name="robots" content="noindex" />

@@ -29,7 +29,6 @@ const MainApp: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   
-  // State for reports
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [segmentationReport, setSegmentationReport] = useState<SegmentationReport | null>(null);
   const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport | null>(null);
@@ -38,7 +37,6 @@ const MainApp: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   
-  // Monitoring State
   const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
 
   const location = useLocation();

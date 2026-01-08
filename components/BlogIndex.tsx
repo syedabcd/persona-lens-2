@@ -8,7 +8,7 @@ const BlogIndex: React.FC = () => {
   const posts = blogPosts;
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-6 pb-20 animate-slide-up">
+    <div className="w-full max-w-6xl mx-auto px-6 pb-20 animate-slide-up pt-32">
       <Helmet>
         <title>Mindlyt Blog | Psychology & AI Insights</title>
         <meta name="description" content="In-depth articles on digital body language, detecting narcissism in texts, B2B sales psychology, and AI-powered communication strategies." />
@@ -16,7 +16,7 @@ const BlogIndex: React.FC = () => {
       </Helmet>
 
       {/* Header */}
-      <div className="text-center mb-16 pt-8">
+      <div className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-4">
           Mindlyt <span className="text-violet-500">Insights</span>
         </h1>
@@ -32,9 +32,7 @@ const BlogIndex: React.FC = () => {
             key={post.id}
             className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-900/20 transition-all duration-300 group flex flex-col h-full"
           >
-            {/* Image Placeholder - Using a generic gradient or Unsplash placeholder since we don't have images in data yet. 
-                In a real app, map slugs to images or add image field to data. 
-                Using a gradient div for now to look good without external deps. */}
+            {/* Image Placeholder */}
             <div className="h-48 overflow-hidden relative bg-slate-800">
                <div className="absolute inset-0 bg-gradient-to-br from-violet-900/50 to-indigo-900/50 z-0"></div>
                <div className="absolute inset-0 flex items-center justify-center text-violet-500/20">
