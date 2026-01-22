@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
           app: resolve(__dirname, 'app.html'),
           about: resolve(__dirname, 'about.html'),
           disclaimer: resolve(__dirname, 'disclaimer.html'),
+          blog: resolve(__dirname, 'blog.html'),
         },
       },
     },
