@@ -25,7 +25,16 @@ type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profi
 // The Main App Component containing the tool logic
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [view, setView] = useState<ViewState>('auth');
+  const location = useLocation();
+  
+  // Initialize view based on URL path. 
+  // If path includes /app, start at auth (which redirects to input if logged in).
+  // Otherwise start at landing.
+  const [view, setView] = useState<ViewState>(() => {
+    if (location.pathname.startsWith('/app')) return 'auth';
+    return 'landing';
+  });
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   
@@ -39,8 +48,6 @@ const MainApp: React.FC = () => {
   
   const [monitoredProfiles, setMonitoredProfiles] = useState<MonitoredProfile[]>([]);
 
-  const location = useLocation();
-
   useEffect(() => {
     // Check for admin route hash
     if (location.hash === '#admin') {
@@ -51,8 +58,9 @@ const MainApp: React.FC = () => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // If user is logged in, default to input view
-      if (session && view === 'auth') {
+      // If user is logged in, default to input view IF they are on the auth screen or app route
+      // If they are on landing page, let them stay there until they click "Get Started"
+      if (session && (view === 'auth' || location.pathname.startsWith('/app'))) {
         setView('input');
       }
     });
@@ -61,7 +69,7 @@ const MainApp: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session && view === 'auth') {
+      if (session && (view === 'auth' || location.pathname.startsWith('/app'))) {
         setView('input');
       }
     });
@@ -177,6 +185,7 @@ const MainApp: React.FC = () => {
        } else if (session) {
          setView('input');
        } else {
+         // If clicking "Analyze" from navbar, go to auth (or input if logged in via logic above)
          setView('auth'); 
        }
     } else if (tab === 'profile') {
