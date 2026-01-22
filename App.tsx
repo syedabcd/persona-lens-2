@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
@@ -20,21 +20,40 @@ import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from 
 import { supabase, saveHistory } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
+type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
 
-// The Main App Component containing the tool logic
+// --- Home Route (Landing Page) ---
+const Home: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleNavClick = (tab: string) => {
+    if (tab === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // For History or Profile, navigate to the app
+      navigate('/app'); 
+    }
+  };
+
+  return (
+    <>
+      <Navbar activeTab="home" setActiveTab={handleNavClick} />
+      <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-10">
+        <LandingPage onGetStarted={() => navigate('/app')} />
+      </main>
+    </>
+  );
+};
+
+// --- Main App Route (Authenticated Area) ---
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const location = useLocation();
+  const navigate = useNavigate();
   
-  // Initialize view based on URL path. 
-  // If path includes /app, start at auth (which redirects to input if logged in).
-  // Otherwise start at landing.
-  const [view, setView] = useState<ViewState>(() => {
-    if (location.pathname.startsWith('/app')) return 'auth';
-    return 'landing';
-  });
-
+  // Default view is 'auth', will switch to 'input' if session exists
+  const [view, setView] = useState<ViewState>('auth');
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   
@@ -58,10 +77,10 @@ const MainApp: React.FC = () => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      // If user is logged in, default to input view IF they are on the auth screen or app route
-      // If they are on landing page, let them stay there until they click "Get Started"
-      if (session && (view === 'auth' || location.pathname.startsWith('/app'))) {
-        setView('input');
+      if (session) {
+        // If user is already logged in, show input. 
+        // If they were viewing a report, we might want to keep it, but for simplicity reset to input on reload unless state persistence is added.
+        if (view === 'auth') setView('input');
       }
     });
 
@@ -69,8 +88,10 @@ const MainApp: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session && (view === 'auth' || location.pathname.startsWith('/app'))) {
-        setView('input');
+      if (session) {
+        if (view === 'auth') setView('input');
+      } else {
+        setView('auth');
       }
     });
 
@@ -78,14 +99,6 @@ const MainApp: React.FC = () => {
         subscription.unsubscribe();
     };
   }, []);
-
-  const handleGetStarted = () => {
-    if (session) {
-      setView('input');
-    } else {
-      setView('auth');
-    }
-  };
 
   const handleAuthSuccess = () => {
     setView('input');
@@ -185,11 +198,10 @@ const MainApp: React.FC = () => {
        } else if (session) {
          setView('input');
        } else {
-         // If clicking "Analyze" from navbar, go to auth (or input if logged in via logic above)
          setView('auth'); 
        }
     } else if (tab === 'profile') {
-        setView('profile');
+        // Just switch tab state, view handled in render
     }
   };
 
@@ -212,7 +224,7 @@ const MainApp: React.FC = () => {
         };
         setMonitoredProfiles(prev => [newProfile, ...prev]);
         setActiveTab('monitoring');
-        setView('monitoring');
+        setView('monitoring' as ViewState); // Using monitoring as a tab mostly
     }
   };
 
@@ -236,10 +248,6 @@ const MainApp: React.FC = () => {
         
         {activeTab === 'home' && (
           <>
-            {view === 'landing' && (
-              <LandingPage onGetStarted={handleGetStarted} />
-            )}
-
             {view === 'auth' && (
               <AuthPage onAuthSuccess={handleAuthSuccess} />
             )}
@@ -248,7 +256,7 @@ const MainApp: React.FC = () => {
               <InputSection 
                 onAnalyze={handleAnalyze} 
                 isAnalyzing={isAnalyzing} 
-                onBack={() => setView('auth')}
+                onBack={() => navigate('/')} // Back goes to Landing Page
               />
             )}
 
@@ -330,11 +338,12 @@ const MainApp: React.FC = () => {
   );
 };
 
+// --- Top Level App Router ---
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">
-        {/* Animated Background Blobs */}
+        {/* Animated Background Blobs - Global */}
         <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob bg-violet-900/20"></div>
            <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[100px] animate-blob delay-200 bg-indigo-900/20"></div>
@@ -342,9 +351,13 @@ const App: React.FC = () => {
         </div>
 
         <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/app/*" element={<MainApp />} />
+            <Route path="/login" element={<Navigate to="/app" replace />} />
             <Route path="/blog" element={<BlogIndex />} />
             <Route path="/blog/:slug" element={<BlogPostView />} />
-            <Route path="/*" element={<MainApp />} />
+            {/* Fallback to Home for unknown routes */}
+            <Route path="*" element={<Home />} />
         </Routes>
       </div>
     </BrowserRouter>
