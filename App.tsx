@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import MarketingNavbar from './components/MarketingNavbar';
 import LandingPage from './components/LandingPage';
 import InputSection from './components/InputSection';
 import ReportView from './components/ReportView';
@@ -20,9 +22,30 @@ import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from 
 import { supabase, saveHistory } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
+type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
 
-// The Main App Component containing the tool logic
+// Wrapper for Landing Page to include the correct Navbar
+const LandingRoute = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <MarketingNavbar />
+      <LandingPage onGetStarted={() => navigate('/app')} />
+    </>
+  );
+};
+
+// Wrapper for Blog Routes to include the correct Navbar
+const BlogLayout = ({ children }: { children?: React.ReactNode }) => {
+  return (
+    <>
+      <MarketingNavbar />
+      {children}
+    </>
+  );
+};
+
+// The Main App Component (Protected/Functional Area)
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [view, setView] = useState<ViewState>('auth');
@@ -72,14 +95,6 @@ const MainApp: React.FC = () => {
         subscription.unsubscribe();
     };
   }, []);
-
-  const handleGetStarted = () => {
-    if (session) {
-      setView('input');
-    } else {
-      setView('auth');
-    }
-  };
 
   const handleAuthSuccess = () => {
     setView('input');
@@ -229,10 +244,6 @@ const MainApp: React.FC = () => {
         
         {activeTab === 'home' && (
           <>
-            {view === 'landing' && (
-              <LandingPage onGetStarted={handleGetStarted} />
-            )}
-
             {view === 'auth' && (
               <AuthPage onAuthSuccess={handleAuthSuccess} />
             )}
@@ -335,9 +346,17 @@ const App: React.FC = () => {
         </div>
 
         <Routes>
-            <Route path="/blog" element={<BlogIndex />} />
-            <Route path="/blog/:slug" element={<BlogPostView />} />
-            <Route path="/*" element={<MainApp />} />
+            <Route path="/" element={<LandingRoute />} />
+            
+            {/* Main Application Area */}
+            <Route path="/app/*" element={<MainApp />} />
+            
+            {/* BLOG ROUTES - Simplified for SPA */}
+            <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
+            <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />
+            
+            {/* Catch-all */}
+            <Route path="*" element={<LandingRoute />} />
         </Routes>
       </div>
     </BrowserRouter>
