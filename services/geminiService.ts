@@ -153,20 +153,6 @@ const handleError = (error: any) => {
     throw error;
 };
 
-// Determine model based on mode complexity
-const getModelForMode = (mode: AnalysisMode): string => {
-    switch (mode) {
-        case AnalysisMode.FAST:
-            return "gemini-3-flash-preview";
-        case AnalysisMode.DEEP:
-        case AnalysisMode.B2B:
-        case AnalysisMode.COMPATIBILITY:
-            return "gemini-3-pro-preview";
-        default:
-            return "gemini-3-flash-preview";
-    }
-};
-
 export const analyzePersona = async (
   context: string, // Manual text context
   files: FileData[], // Images (Screenshots)
@@ -185,9 +171,8 @@ export const analyzePersona = async (
     ${context}
   `;
 
-  const modelName = getModelForMode(mode);
-  
-  // Use thinking for Deep mode for better reasoning
+  const modelName = "gemini-3-flash-preview";
+  // Reduced thinking budget to avoid response truncation/timeout
   const thinkingBudget = mode === AnalysisMode.DEEP ? 2048 : 0;
   const langInstruction = getLanguageInstruction(language);
 
@@ -221,6 +206,7 @@ export const analyzePersona = async (
   const config: any = {
     responseMimeType: "application/json",
     responseSchema: REPORT_SCHEMA,
+    // Explicitly set high output tokens to accommodate JSON schema
     maxOutputTokens: 32768,
   };
 
@@ -254,7 +240,7 @@ export const analyzeClientSegmentation = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<SegmentationReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-pro-preview"; // Always use Pro for complex segmentation
+  const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -320,7 +306,7 @@ export const analyzeCompatibility = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<CompatibilityReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-pro-preview"; // Always use Pro for deep compatibility
+  const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -380,7 +366,7 @@ export const generateActionPlan = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<ProtocolPlan> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-flash-preview"; // Protocol generation is simpler, Flash is fine
+  const modelName = "gemini-3-flash-preview";
   const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
@@ -427,7 +413,7 @@ export const chatWithPersonaBot = async (
   reportContext: AnalysisReport | null
 ) => {
   const ai = getAIClient();
-  const model = "gemini-3-flash-preview"; // Chat should be fast
+  const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
   const systemInstruction = `
@@ -466,7 +452,7 @@ export const createSimulationChat = (
   goal: string
 ) => {
   const ai = getAIClient();
-  const model = "gemini-3-flash-preview"; // Chat should be fast
+  const model = "gemini-3-flash-preview";
   const contextStr = JSON.stringify(reportContext);
 
   const systemInstruction = `

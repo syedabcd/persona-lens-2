@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2, Languages } from 'lucide-react';
+import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2, Languages } from 'lucide-react';
 import { FormData, FileData, AnalysisMode, SocialProfile } from '../types';
 import { scrapePublicProfile } from '../services/scrapingService';
 
@@ -15,16 +15,15 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     purpose: '',
     textContext: '',
     userContext: '',
-    uploadedContent: '', // Kept for interface compatibility, but derived from textFiles now
-    language: 'english', 
+    uploadedContent: '',
+    language: 'english', // Default to English
   });
   
   const [activeTab, setActiveTab] = useState<'upload' | 'social'>('upload');
   
+  // Renamed to mediaFiles to support Images AND PDFs
   const [mediaFiles, setMediaFiles] = useState<{name: string, data: FileData}[]>([]);
-  // Changed to store content so we can remove it properly if user clicks X
-  const [textFiles, setTextFiles] = useState<{name: string, content: string}[]>([]);
-  
+  const [textFilesMeta, setTextFilesMeta] = useState<{name: string}[]>([]);
   const [mode, setMode] = useState<AnalysisMode>(AnalysisMode.DEEP);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,8 +37,10 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
   const processFiles = async (files: FileList) => {
     const newMedia: {name: string, data: FileData}[] = [];
-    const newTextFiles: {name: string, content: string}[] = [];
+    const newTextFiles: {name: string}[] = [];
+    let newTextContent = "";
 
+    // Image compression helper to prevent Payload Too Large errors
     const compressImage = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -50,6 +51,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     let width = img.width;
                     let height = img.height;
                     
+                    // Limit max dimension to reduce token count and payload size
+                    // Reduced from 1536 to 1024 to prevent XHR errors
                     const MAX_SIZE = 1024;
                     
                     if (width > height) {
@@ -73,6 +76,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     }
                     ctx.drawImage(img, 0, 0, width, height);
                     
+                    // Export as JPEG with 0.7 quality to reduce size
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     resolve(dataUrl.split(',')[1]);
                 };
@@ -88,17 +92,18 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
     const processFile = async (file: File): Promise<void> => {
       try {
-        // Handle Text Files (.txt)
+        // Handle Text Files (.txt) -> Append to context string
         if (file.type === "text/plain" || file.name.endsWith('.txt')) {
              return new Promise((resolve) => {
                const reader = new FileReader();
                reader.onload = (event) => {
                    let text = event.target?.result as string;
+                   // Safety truncation for massive logs
                    if (text.length > 50000) {
                        text = text.substring(0, 50000) + "\n...[TRUNCATED DUE TO SIZE]...";
                    }
-                   const formattedContent = `\n--- START OF FILE: ${file.name} ---\n${text}\n--- END OF FILE ---\n`;
-                   newTextFiles.push({ name: file.name, content: formattedContent });
+                   newTextContent += `\n--- START OF FILE: ${file.name} ---\n${text}\n--- END OF FILE ---\n`;
+                   newTextFiles.push({ name: file.name });
                    resolve();
                };
                reader.readAsText(file);
@@ -110,7 +115,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             newMedia.push({
                 name: file.name,
                 data: {
-                    mimeType: 'image/jpeg',
+                    mimeType: 'image/jpeg', // Normalize to JPEG
                     data: compressedBase64
                 }
             });
@@ -145,7 +150,11 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
     }
 
     setMediaFiles(prev => [...prev, ...newMedia]);
-    setTextFiles(prev => [...prev, ...newTextFiles]);
+    setTextFilesMeta(prev => [...prev, ...newTextFiles]);
+    setFormData(prev => ({
+      ...prev,
+      uploadedContent: prev.uploadedContent + newTextContent
+    }));
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,8 +196,9 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       try {
           const result = await scrapePublicProfile(scrapePlatform, scrapeUsername);
           if (result.success && result.data) {
+              // Add to the list of profiles instead of replacing
               setScrapedProfiles(prev => [result.data!, ...prev]);
-              setScrapeUsername(''); 
+              setScrapeUsername(''); // Clear input for convenience
           } else {
               setScrapeError(result.error || "Failed to scrape profile. Ensure it is public.");
           }
@@ -204,7 +214,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
   };
 
   const removeMedia = (index: number) => setMediaFiles(prev => prev.filter((_, i) => i !== index));
-  const removeTextFile = (index: number) => setTextFiles(prev => prev.filter((_, i) => i !== index));
+  const removeTextFile = (index: number) => setTextFilesMeta(prev => prev.filter((_, i) => i !== index));
 
   const handleRunAnalysis = async () => {
     if (!formData.relationship || !formData.purpose) {
@@ -212,7 +222,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       return;
     }
 
-    // Aggregate social data
+    // Aggregate social data internally before sending to analysis
     let socialContext = "";
     if (scrapedProfiles.length > 0) {
         socialContext = "\n\n=== IMPORTED SOCIAL MEDIA PROFILES ===\n";
@@ -234,13 +244,9 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
         });
     }
 
-    // Aggregate uploaded text files
-    const fileContent = textFiles.map(f => f.content).join('');
-
     const finalFormData = {
         ...formData,
-        textContext: formData.textContext + socialContext,
-        uploadedContent: fileContent // Ensure files are attached here
+        textContext: formData.textContext + socialContext
     };
 
     const hasText = finalFormData.textContext.length > 0 || finalFormData.uploadedContent.length > 0 || mediaFiles.length > 0;
@@ -468,9 +474,9 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                     </div>
 
                     {/* File Previews */}
-                    {(mediaFiles.length > 0 || textFiles.length > 0) && (
+                    {(mediaFiles.length > 0 || textFilesMeta.length > 0) && (
                         <div className="flex flex-wrap gap-2 animate-fade-in pt-2">
-                            {textFiles.map((file, idx) => (
+                            {textFilesMeta.map((file, idx) => (
                                 <div key={`txt-${idx}`} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-2 rounded-xl text-xs font-medium text-indigo-700 dark:text-indigo-300 shadow-sm border border-indigo-100 dark:border-indigo-800">
                                     <FileText size={14} className="opacity-70" />
                                     <span className="truncate max-w-[120px]">{file.name}</span>
