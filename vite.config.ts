@@ -37,6 +37,16 @@ export default defineConfig(({ mode }) => {
           'blog-psychology': resolve(__dirname, 'blog-psychology-of-texting.html'),
           'blog-red-flags': resolve(__dirname, 'blog-red-flags-in-chat.html'),
         },
+        external: [
+          'react',
+          'react-dom',
+          'react-dom/client',
+          'react-router-dom',
+          'react-helmet-async',
+          '@google/genai',
+          '@supabase/supabase-js',
+          'lucide-react'
+        ]
       },
     },
     plugins: [react()],
