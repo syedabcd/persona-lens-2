@@ -347,15 +347,9 @@ const App: React.FC = () => {
 
         <Routes>
             <Route path="/" element={<LandingRoute />} />
-            
-            {/* Main Application Area */}
             <Route path="/app/*" element={<MainApp />} />
-            
-            {/* BLOG ROUTES - Simplified for SPA */}
             <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
             <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />
-            
-            {/* Catch-all */}
             <Route path="*" element={<LandingRoute />} />
         </Routes>
       </div>
