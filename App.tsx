@@ -17,6 +17,7 @@ import ProfileView from './components/ProfileView';
 import AdminPanel from './components/AdminPanel';
 import BlogIndex from './components/BlogIndex';
 import BlogPostView from './components/BlogPost';
+import AboutPage from './components/AboutPage';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
 import { supabase, saveHistory } from './services/supabaseService';
@@ -347,6 +348,7 @@ const App: React.FC = () => {
 
         <Routes>
             <Route path="/" element={<LandingRoute />} />
+            <Route path="/about" element={<BlogLayout><AboutPage /></BlogLayout>} />
             <Route path="/app/*" element={<MainApp />} />
             <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
             <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />

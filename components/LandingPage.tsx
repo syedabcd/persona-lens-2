@@ -1,11 +1,23 @@
-import React from 'react';
-import { ArrowRight, Brain, MessageSquare, ShieldAlert, Sparkles, Lock, CheckCircle, Zap, Heart, Search, FileText, Upload, Globe, User } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ArrowRight, Brain, Heart, Zap, CheckCircle, Upload, FileText, User, Globe, Lock, ShieldAlert } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const elem = document.getElementById(location.hash.slice(1));
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [location]);
+
   return (
     <div className="flex flex-col items-center w-full">
       
@@ -94,7 +106,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       </section>
 
       {/* --- DETAILED FEATURES --- */}
-      <section className="w-full max-w-6xl mx-auto px-6 py-24 space-y-24">
+      <section id="features" className="w-full max-w-6xl mx-auto px-6 py-24 space-y-24">
           
           {/* Feature 1: Relationships */}
           <div className="flex flex-col md:flex-row items-center gap-12">
@@ -277,5 +289,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     </div>
   );
 };
+
+// Icon import helper for Sparkles (used in hero)
+import { Sparkles } from 'lucide-react';
 
 export default LandingPage;
