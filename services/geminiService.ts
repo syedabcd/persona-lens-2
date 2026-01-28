@@ -171,9 +171,10 @@ export const analyzePersona = async (
     ${context}
   `;
 
-  const modelName = "gemini-3-flash-preview";
-  // Reduced thinking budget to avoid response truncation/timeout
-  const thinkingBudget = mode === AnalysisMode.DEEP ? 2048 : 0;
+  // Use Pro for DEEP analysis, Flash for FAST
+  const modelName = mode === AnalysisMode.DEEP ? "gemini-3-pro-preview" : "gemini-3-flash-preview";
+  const thinkingBudget = mode === AnalysisMode.DEEP ? 8192 : 0;
+  
   const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
@@ -206,7 +207,7 @@ export const analyzePersona = async (
   const config: any = {
     responseMimeType: "application/json",
     responseSchema: REPORT_SCHEMA,
-    // Explicitly set high output tokens to accommodate JSON schema
+    // Explicitly set high output tokens to accommodate JSON schema and reasoning
     maxOutputTokens: 32768,
   };
 
@@ -240,7 +241,7 @@ export const analyzeClientSegmentation = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<SegmentationReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-flash-preview";
+  const modelName = "gemini-3-pro-preview"; // Use Pro for complex B2B logic
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -284,6 +285,7 @@ export const analyzeClientSegmentation = async (
         responseMimeType: "application/json",
         responseSchema: SEGMENTATION_SCHEMA,
         maxOutputTokens: 32768,
+        thinkingConfig: { thinkingBudget: 8192 }
       }
     });
 
@@ -306,7 +308,7 @@ export const analyzeCompatibility = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<CompatibilityReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-flash-preview";
+  const modelName = "gemini-3-pro-preview"; // Use Pro for complex compatibility reasoning
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -346,6 +348,7 @@ export const analyzeCompatibility = async (
         responseMimeType: "application/json",
         responseSchema: COMPATIBILITY_SCHEMA,
         maxOutputTokens: 32768,
+        thinkingConfig: { thinkingBudget: 8192 }
       }
     });
 
@@ -366,7 +369,7 @@ export const generateActionPlan = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<ProtocolPlan> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-flash-preview";
+  const modelName = "gemini-3-pro-preview"; // Use Pro for detailed planning
   const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
@@ -393,6 +396,7 @@ export const generateActionPlan = async (
         responseMimeType: "application/json",
         responseSchema: PROTOCOL_SCHEMA,
         maxOutputTokens: 16384,
+        thinkingConfig: { thinkingBudget: 4096 }
         }
     });
 
@@ -413,6 +417,7 @@ export const chatWithPersonaBot = async (
   reportContext: AnalysisReport | null
 ) => {
   const ai = getAIClient();
+  // Chat can use Flash for responsiveness, no complex reasoning schema needed
   const model = "gemini-3-flash-preview";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
@@ -452,6 +457,7 @@ export const createSimulationChat = (
   goal: string
 ) => {
   const ai = getAIClient();
+  // Simulation can use Flash for conversational speed
   const model = "gemini-3-flash-preview";
   const contextStr = JSON.stringify(reportContext);
 
@@ -489,7 +495,8 @@ export const evaluateSimulation = async (
   reportContext: AnalysisReport
 ): Promise<SimulationFeedback> => {
   const ai = getAIClient();
-  const modelName = "gemini-3-flash-preview";
+  // Evaluation requires reasoning
+  const modelName = "gemini-3-pro-preview";
 
   const prompt = `
     Analyze the following roleplay transcript between the User and the Target.
@@ -520,6 +527,7 @@ export const evaluateSimulation = async (
         responseMimeType: "application/json",
         responseSchema: SIMULATION_FEEDBACK_SCHEMA,
         maxOutputTokens: 16384,
+        thinkingConfig: { thinkingBudget: 4096 }
         }
     });
 

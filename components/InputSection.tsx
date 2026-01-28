@@ -92,8 +92,14 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
 
     const processFile = async (file: File): Promise<void> => {
       try {
+        const lowerName = file.name.toLowerCase();
+        // Robust type checking
+        const isText = file.type === "text/plain" || lowerName.endsWith('.txt') || lowerName.endsWith('.log') || lowerName.endsWith('.csv') || lowerName.endsWith('.json');
+        const isPDF = file.type === "application/pdf" || lowerName.endsWith('.pdf');
+        const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|webp|heic)$/i.test(lowerName);
+
         // Handle Text Files (.txt) -> Append to context string
-        if (file.type === "text/plain" || file.name.endsWith('.txt')) {
+        if (isText) {
              return new Promise((resolve) => {
                const reader = new FileReader();
                reader.onload = (event) => {
@@ -110,7 +116,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
              });
         } 
         // Handle Images -> Compress & Convert to Base64
-        else if (file.type.startsWith("image/")) {
+        else if (isImage) {
             const compressedBase64 = await compressImage(file);
             newMedia.push({
                 name: file.name,
@@ -121,7 +127,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
             });
         }
         // Handle PDFs -> Raw Base64
-        else if (file.type === "application/pdf") {
+        else if (isPDF) {
            return new Promise((resolve) => {
                const reader = new FileReader();
                reader.onloadend = () => {
@@ -130,7 +136,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                   newMedia.push({
                       name: file.name,
                       data: {
-                          mimeType: file.type,
+                          mimeType: "application/pdf", // Force pdf mimetype
                           data: base64Data
                       }
                   });
@@ -448,7 +454,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
                             id="file-upload" 
                             className="hidden" 
                             multiple 
-                            accept=".txt,.pdf,image/*"
+                            accept=".txt,.pdf,image/*,.log,.csv,.json"
                             onChange={handleFileChange}
                         />
                         <label 
