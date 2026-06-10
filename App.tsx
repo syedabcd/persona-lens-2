@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import MarketingNavbar from './components/MarketingNavbar';
 import LandingPage from './components/LandingPage';
@@ -25,6 +26,15 @@ import { Session } from '@supabase/supabase-js';
 
 type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
 
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 // Wrapper for Landing Page to include the correct Navbar
 const LandingRoute = () => {
   const navigate = useNavigate();
@@ -47,7 +57,7 @@ const BlogLayout = ({ children }: { children?: React.ReactNode }) => {
 };
 
 // The Main App Component (Protected/Functional Area)
-const MainApp: React.FC = () => {
+const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [view, setView] = useState<ViewState>('auth');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -239,105 +249,7 @@ const MainApp: React.FC = () => {
 
   return (
     <>
-      <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
-      
-      <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-10">
-        
-        {activeTab === 'home' && (
-          <>
-            {view === 'auth' && (
-              <AuthPage onAuthSuccess={handleAuthSuccess} />
-            )}
-
-            {view === 'input' && (
-              <InputSection 
-                onAnalyze={handleAnalyze} 
-                isAnalyzing={isAnalyzing} 
-                onBack={() => setView('auth')}
-              />
-            )}
-
-            {view === 'report' && (
-              <div className="animate-slide-up max-w-5xl mx-auto">
-                 <div className="mb-6 flex items-center justify-between bg-slate-800/50 backdrop-blur-md p-2 rounded-2xl border border-white/10 sticky top-24 z-20 shadow-sm transition-colors duration-200 ease-out max-w-2xl mx-auto">
-                    <button 
-                        onClick={resetAnalysis}
-                        className="text-gray-300 text-sm font-medium flex items-center gap-2 hover:text-white px-3 py-1.5 rounded-xl hover:bg-white/10 transition-all"
-                    >
-                        ← Start New Analysis
-                    </button>
-                    <span className="text-[10px] font-bold text-violet-300 bg-violet-900/50 px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse"></span>
-                        Report Ready
-                    </span>
-                 </div>
-                 
-                 {report && (
-                    <ReportView 
-                        report={report} 
-                        language={resultLanguage}
-                        onChatClick={() => setIsChatOpen(true)} 
-                        onSimulateClick={() => setIsSimulatorOpen(true)}
-                        onVigilanceClick={addToMonitoring}
-                    />
-                 )}
-                 {segmentationReport && <SegmentationView report={segmentationReport} />}
-                 {compatibilityReport && <CompatibilityView report={compatibilityReport} />}
-                 
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Profile View Integration */}
-        {activeTab === 'profile' && (
-             <>
-                {!session ? (
-                    <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up text-center">
-                        <h3 className="text-xl font-bold mb-4">Please Sign In</h3>
-                        <p className="text-gray-400 mb-6">You need to be logged in to view your profile.</p>
-                        <button onClick={() => { setActiveTab('home'); setView('auth'); }} className="bg-violet-600 px-6 py-2 rounded-full font-bold">Sign In</button>
-                    </div>
-                ) : (
-                    <ProfileView session={session} onLogout={handleLogout} />
-                )}
-             </>
-        )}
-
-        {activeTab === 'monitoring' && (
-            <MonitoringView profiles={monitoredProfiles} />
-        )}
-
-        {activeTab === 'history' && (
-          <>
-            {!session ? (
-               <div className="flex flex-col items-center justify-center min-h-[50vh] animate-slide-up text-center">
-                  <h3 className="text-xl font-bold mb-4">Please Sign In</h3>
-                  <p className="text-gray-400 mb-6">You need to be logged in to view your history.</p>
-                  <button onClick={() => { setActiveTab('home'); setView('auth'); }} className="bg-violet-600 px-6 py-2 rounded-full font-bold">Sign In</button>
-               </div>
-            ) : (
-               <HistoryView userId={session.user.id} onSelectReport={handleSelectHistory} />
-            )}
-          </>
-        )}
-
-      </main>
-
-      {isChatOpen && report && (
-        <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
-      )}
-
-      {isSimulatorOpen && report && (
-        <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
-      )}
-    </>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <BrowserRouter>
+      <ScrollToTop />
       <div className="min-h-screen relative overflow-hidden text-gray-100 bg-[#020617]">
         {/* Animated Background Blobs */}
         <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
@@ -346,16 +258,86 @@ const App: React.FC = () => {
            <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob delay-700 bg-fuchsia-900/20"></div>
         </div>
 
+        {/* Dynamic Navbar based on view */}
+        {view === 'input' || view === 'report' || view === 'monitoring' || view === 'profile' ? (
+             <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
+        ) : null}
+
+        <div className="relative z-10 w-full min-h-screen pt-20 pb-10 px-4 md:px-6">
+          
+          {view === 'auth' && (
+             <div className="max-w-md mx-auto pt-10">
+                 <AuthPage onAuthSuccess={handleAuthSuccess} />
+             </div>
+          )}
+
+          {view === 'input' && (
+             <InputSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} onBack={() => { window.location.href = '/'; }} />
+          )}
+
+          {view === 'report' && (
+             <>
+                {report && (
+                    <ReportView 
+                        report={report} 
+                        language={resultLanguage}
+                        onChatClick={() => setIsChatOpen(true)}
+                        onSimulateClick={() => setIsSimulatorOpen(true)}
+                        onVigilanceClick={addToMonitoring}
+                    />
+                )}
+                {segmentationReport && (
+                    <SegmentationView report={segmentationReport} />
+                )}
+                {compatibilityReport && (
+                    <CompatibilityView report={compatibilityReport} />
+                )}
+
+                {/* Overlays */}
+                {isChatOpen && report && (
+                    <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
+                )}
+                {isSimulatorOpen && report && (
+                    <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
+                )}
+             </>
+          )}
+
+          {view === 'monitoring' && (
+              <MonitoringView profiles={monitoredProfiles} />
+          )}
+
+          {view === 'profile' && session && (
+              <ProfileView session={session} onLogout={handleLogout} />
+          )}
+          
+          {/* History Mode (Accessible via Tab) */}
+          {activeTab === 'history' && view !== 'history' && (
+               // Simple overlay or switch view for history
+               <div className="fixed inset-0 z-40 bg-[#020617] pt-24 px-4 overflow-y-auto">
+                   <div className="max-w-3xl mx-auto">
+                        <button onClick={() => setActiveTab('home')} className="mb-4 text-slate-400 hover:text-white">← Back</button>
+                        {session?.user && (
+                            <HistoryView userId={session.user.id} onSelectReport={handleSelectHistory} />
+                        )}
+                   </div>
+               </div>
+          )}
+
+        </div>
+
         <Routes>
             <Route path="/" element={<LandingRoute />} />
             <Route path="/about" element={<BlogLayout><AboutPage /></BlogLayout>} />
-            <Route path="/app/*" element={<MainApp />} />
+            {/* The main app logic is rendered above based on state, but we need routes for static pages */}
+            {/* /app route is handled by the component rendering above, technically these routes are just for URL structure if needed */}
+            <Route path="/app/*" element={<div />} /> 
             <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
             <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />
             <Route path="*" element={<LandingRoute />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </>
   );
 };
 

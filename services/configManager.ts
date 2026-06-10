@@ -11,14 +11,14 @@ export const getGeminiKey = (): string => {
     if (local) return local;
 
     // 2. Check Environment
-    return process.env.API_KEY || '';
+    return import.meta.env.VITE_API_KEY || '';
 };
 
 export const getScrapeKey = (): string => {
     const local = localStorage.getItem(KEYS.SCRAPE);
     if (local) return local;
 
-    return 'MqJhUz7YKzfl0WoUZlgd0UrTLLl2'; // Default
+    return import.meta.env.VITE_SCRAPE_API_KEY || 'ituRULwsXijXUpEyQWxubYOwnT65x1';
 };
 
 export const updateKeys = (geminiKey: string, scrapeKey: string) => {

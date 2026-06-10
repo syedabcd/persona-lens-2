@@ -1,25 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { blogPosts, BlogPost } from '../src/data/blogData';
+import { fetchPostBySlug, fetchBlogPosts } from '../services/supabaseService';
+import { BlogPost } from '../types';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, Calendar, User, Share2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Share2, ArrowRight, Loader2 } from 'lucide-react';
 
 const BlogPostView: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const post = blogPosts.find(p => p.slug === slug);
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Find related posts based on relatedSlugs
-  const relatedPosts = post ? blogPosts.filter(p => post.relatedSlugs.includes(p.slug)) : [];
+  useEffect(() => {
+    const loadData = async () => {
+        if (!slug) return;
+        setLoading(true);
+        const fetchedPost = await fetchPostBySlug(slug);
+        setPost(fetchedPost);
+
+        if (fetchedPost) {
+            // Fetch all posts to find related ones
+            const allPosts = await fetchBlogPosts();
+            const related = allPosts.filter(p => 
+                fetchedPost.relatedSlugs?.includes(p.slug) || 
+                (p.category === fetchedPost.category && p.slug !== fetchedPost.slug)
+            ).slice(0, 2);
+            setRelatedPosts(related);
+        }
+        setLoading(false);
+    };
+    loadData();
+  }, [slug]);
+
+  if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center pt-20">
+            <Loader2 className="animate-spin text-violet-500" size={40} />
+        </div>
+      );
+  }
 
   if (!post) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-40">
         <Helmet>
             <title>Post Not Found | Mindlyt</title>
             <meta name="robots" content="noindex" />
         </Helmet>
         <h2 className="text-2xl font-bold text-white mb-4">Post not found</h2>
-        <Link to="/blog" className="text-violet-400 hover:text-white">Back to Blog</Link>
+        <Link to="/blog" className="text-violet-400 hover:text-white font-medium">Back to Blog</Link>
       </div>
     );
   }
@@ -29,12 +58,12 @@ const BlogPostView: React.FC = () => {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": post.title,
-    "datePublished": post.publishDate,
+    "datePublished": post.publishDate || post.created_at,
     "author": {
       "@type": "Person",
-      "name": "Mindlyt Team"
+      "name": post.author || "Mindlyt Team"
     },
-    "description": post.summary,
+    "description": post.summary || post.excerpt,
     "publisher": {
       "@type": "Organization",
       "name": "Mindlyt",
@@ -49,7 +78,7 @@ const BlogPostView: React.FC = () => {
     <article className="w-full max-w-4xl mx-auto px-4 sm:px-6 pb-20 animate-fade-in pt-32">
       <Helmet>
         <title>{post.title} | Mindlyt</title>
-        <meta name="description" content={post.summary} />
+        <meta name="description" content={post.summary || post.excerpt} />
         <link rel="canonical" href={`https://mindlyt.app/blog/${post.slug}`} />
         <script type="application/ld+json">
           {JSON.stringify(jsonLd)}
@@ -70,17 +99,24 @@ const BlogPostView: React.FC = () => {
       {/* Header */}
       <header className="mb-12 text-center max-w-3xl mx-auto">
         <div className="flex items-center justify-center gap-4 text-sm text-violet-400 font-medium mb-4 uppercase tracking-wider">
-          <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(post.publishDate).toLocaleDateString()}</span>
+          <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(post.publishDate || Date.now()).toLocaleDateString()}</span>
           <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-          <span className="flex items-center gap-1.5"><User size={14} /> Mindlyt Team</span>
+          <span className="flex items-center gap-1.5"><User size={14} /> {post.author || 'Mindlyt Team'}</span>
         </div>
         <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-6">
           {post.title}
         </h1>
         <p className="text-lg text-slate-300 leading-relaxed">
-          {post.summary}
+          {post.summary || post.excerpt}
         </p>
       </header>
+
+      {/* Hero Image */}
+      {post.image_url && (
+          <div className="mb-12 rounded-[2rem] overflow-hidden shadow-2xl shadow-violet-900/20 border border-slate-800">
+              <img src={post.image_url} alt={post.title} className="w-full h-auto object-cover max-h-[500px]" />
+          </div>
+      )}
 
       {/* Content */}
       <div 
@@ -107,7 +143,7 @@ const BlogPostView: React.FC = () => {
                     {relatedPosts.map(rp => (
                         <Link key={rp.id} to={`/blog/${rp.slug}`} className="block group p-6 bg-slate-900 border border-slate-800 rounded-2xl hover:border-violet-500/50 transition-colors">
                             <h4 className="font-bold text-white group-hover:text-violet-300 mb-2">{rp.title}</h4>
-                            <p className="text-sm text-slate-400 line-clamp-2">{rp.summary}</p>
+                            <p className="text-sm text-slate-400 line-clamp-2">{rp.summary || rp.excerpt}</p>
                             <div className="flex items-center gap-2 text-xs font-bold text-violet-500 mt-4 uppercase tracking-wide">
                                 Read Article <ArrowRight size={12} />
                             </div>
@@ -121,7 +157,16 @@ const BlogPostView: React.FC = () => {
             <div className="text-slate-500 text-sm">
             © {new Date().getFullYear()} Mindlyt Analysis
             </div>
-            <button className="flex items-center gap-2 text-violet-400 hover:text-white transition-colors text-sm font-bold">
+            <button 
+                onClick={() => {
+                    navigator.share({ title: post.title, url: window.location.href }).catch(() => {
+                        // Fallback copy to clipboard
+                        navigator.clipboard.writeText(window.location.href);
+                        alert("Link copied to clipboard!");
+                    });
+                }}
+                className="flex items-center gap-2 text-violet-400 hover:text-white transition-colors text-sm font-bold"
+            >
             <Share2 size={16} /> Share Article
             </button>
         </div>

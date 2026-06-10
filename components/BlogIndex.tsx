@@ -1,77 +1,99 @@
-
-import React from 'react';
-import { blogPosts } from '../src/data/blogData';
+import React, { useEffect, useState } from 'react';
+import { fetchBlogPosts } from '../services/supabaseService';
+import { BlogPost } from '../types';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Calendar, User, Tag } from 'lucide-react';
+import { ArrowRight, Calendar, User, Tag, Loader2, Sparkles } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
 const BlogIndex: React.FC = () => {
-  const posts = blogPosts;
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+        const data = await fetchBlogPosts();
+        setPosts(data);
+        setLoading(false);
+    };
+    loadPosts();
+  }, []);
+
+  if (loading) {
+      return (
+          <div className="min-h-screen flex items-center justify-center pt-20">
+              <Loader2 className="animate-spin text-violet-500" size={40} />
+          </div>
+      );
+  }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-6 pb-20 animate-slide-up pt-28">
+    <div className="w-full min-h-screen pb-20 pt-32 px-4 md:px-6">
       <Helmet>
         <title>Mindlyt Blog | Psychology & AI Insights</title>
-        <meta name="description" content="In-depth articles on digital body language, detecting narcissism in texts, B2B sales psychology, and AI-powered communication strategies." />
-        <link rel="canonical" href="https://mindlyt.app/blog" />
+        <meta name="description" content="Read the latest insights on digital psychology, texting red flags, and how AI is changing modern relationships." />
       </Helmet>
 
-      {/* Header */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-4">
-          Mindlyt <span className="text-violet-500">Insights</span>
-        </h1>
-        <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-          Deep dives into psychology, AI analysis, and the art of digital communication.
-        </p>
-      </div>
-
-      {/* Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {posts.map((post) => (
-          <article 
-            key={post.id}
-            className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-900/20 transition-all duration-300 group flex flex-col h-full"
-          >
-            <div className="h-48 overflow-hidden relative bg-slate-800">
-               {post.image_url ? (
-                  <img src={post.image_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
-               ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-900/50 to-indigo-900/50 z-0 flex items-center justify-center">
-                     <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" className="text-violet-500/20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                  </div>
-               )}
-               <div className="absolute top-4 left-4">
-                  <span className="bg-black/60 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-md border border-white/10 flex items-center gap-1">
-                    <Tag size={10} className="text-violet-400" /> {post.category}
-                  </span>
-               </div>
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="text-center mb-16 animate-slide-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-widest mb-4">
+                <Sparkles size={12} />
+                Psychology Decoded
             </div>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+                The Mindlyt <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Journal</span>
+            </h1>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                Deep dives into digital body language, the psychology of ghosting, and how to navigate modern relationships with clarity.
+            </p>
+        </div>
 
-            {/* Content */}
-            <div className="p-6 flex flex-col flex-1">
-              <div className="flex items-center gap-4 text-xs text-slate-500 mb-3 font-medium">
-                <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(post.publishDate).toLocaleDateString()}</span>
-                <span className="flex items-center gap-1"><User size={12} /> {post.author || 'Team'}</span>
-              </div>
-              
-              <h2 className="text-xl font-bold text-white mb-3 leading-snug group-hover:text-violet-300 transition-colors line-clamp-2">
-                {post.title}
-              </h2>
-              
-              <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-1 line-clamp-3">
-                {post.summary}
-              </p>
+        {/* Blog Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-slide-up delay-100">
+            {posts.map((post) => (
+                <Link 
+                    to={`/blog/${post.slug}`} 
+                    key={post.id}
+                    className="group bg-slate-900 border border-slate-800 hover:border-violet-500/30 rounded-[2rem] overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-violet-900/20"
+                >
+                    {/* Image */}
+                    <div className="h-48 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-slate-800 animate-pulse" /> {/* Placeholder */}
+                        <img 
+                            src={post.image_url} 
+                            alt={post.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onLoad={(e) => (e.currentTarget.previousSibling as HTMLElement).style.display = 'none'}
+                        />
+                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                            {post.category}
+                        </div>
+                    </div>
 
-              <Link 
-                to={`/blog/${post.slug}`}
-                className="flex items-center gap-2 text-sm font-bold text-violet-400 hover:text-white transition-colors mt-auto"
-              >
-                Read Article <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </article>
-        ))}
+                    {/* Content */}
+                    <div className="p-6 flex-1 flex flex-col">
+                        <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
+                            <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(post.publishDate || Date.now()).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1"><User size={12} /> {post.author || 'Team'}</span>
+                        </div>
+                        
+                        <h2 className="text-xl font-bold text-white mb-3 leading-snug group-hover:text-violet-300 transition-colors">
+                            {post.title}
+                        </h2>
+                        
+                        <p className="text-sm text-slate-400 leading-relaxed mb-6 line-clamp-3 flex-1">
+                            {post.summary || post.excerpt}
+                        </p>
+
+                        <div className="flex items-center gap-2 text-sm font-bold text-violet-500 group-hover:translate-x-1 transition-transform mt-auto">
+                            Read Article <ArrowRight size={16} />
+                        </div>
+                    </div>
+                </Link>
+            ))}
+        </div>
+
       </div>
     </div>
   );

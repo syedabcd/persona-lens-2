@@ -2,8 +2,6 @@ import { SocialProfile } from "../types";
 import { getScrapeKey } from "./configManager";
 
 const BASE_URL = "https://api.scrapecreators.com/v1";
-// Use a CORS proxy to allow browser-based requests to the third-party API
-const PROXY_URL = "https://corsproxy.io/?"; 
 
 interface ScrapeResult {
   success: boolean;
@@ -245,16 +243,13 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
     }
 
     const targetUrl = new URL(`${BASE_URL}${endpoint}`);
-    targetUrl.searchParams.append("api_key", apiKey);
 
-    // Using Proxy to bypass CORS in browser environment
-    const finalUrl = `${PROXY_URL}${encodeURIComponent(targetUrl.toString())}`;
-
+    // Call API directly since it supports CORS natively
     try {
-        const response = await fetch(finalUrl, {
+        const response = await fetch(targetUrl.toString(), {
             method: 'GET',
             headers: {
-                'x-api-key': apiKey, // Redundant but good practice
+                'x-api-key': apiKey,
                 'Accept': 'application/json'
             }
         });
@@ -303,7 +298,7 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
         };
 
     } catch (error: any) {
-        console.error("Scraping error:", error);
-        return { success: false, error: error.message || "Network error. Possible CORS issue." };
+        console.warn("Scraping warning:", error.message || error);
+        return { success: false, error: error.message || "Network error. Possible CORS issue or invalid username." };
     }
 };

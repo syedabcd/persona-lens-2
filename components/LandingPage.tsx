@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ArrowRight, Brain, Heart, Zap, CheckCircle, Upload, FileText, User, Globe, Lock, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Brain, Heart, Zap, CheckCircle, Upload, FileText, User, Globe, Lock, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -10,11 +10,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   const location = useLocation();
 
   useEffect(() => {
+    // Small timeout ensures the DOM has fully updated before we try to scroll
     if (location.hash) {
-      const elem = document.getElementById(location.hash.slice(1));
-      if (elem) {
-        elem.scrollIntoView({ behavior: 'smooth' });
-      }
+      setTimeout(() => {
+        const elem = document.getElementById(location.hash.slice(1));
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+        window.scrollTo(0, 0);
     }
   }, [location]);
 
@@ -289,8 +294,5 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     </div>
   );
 };
-
-// Icon import helper for Sparkles (used in hero)
-import { Sparkles } from 'lucide-react';
 
 export default LandingPage;
