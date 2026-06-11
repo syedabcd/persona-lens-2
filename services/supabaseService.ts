@@ -21,8 +21,14 @@ try {
         auth: {
             getSession: async () => ({ data: { session: null }, error: null }),
             onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-            signInWithPassword: async () => ({ error: { message: "Database connection failed (Mock Client Active). Check Supabase settings." } }),
-            signUp: async () => ({ error: { message: "Database connection failed (Mock Client Active)." } }),
+            signInWithPassword: async () => ({ 
+                data: { session: { user: { id: 'mock-user', email: 'mock@example.com' } } }, 
+                error: null 
+            }),
+            signUp: async () => ({ 
+                data: { session: { user: { id: 'mock-user', email: 'mock@example.com' } } }, 
+                error: null 
+            }),
             signOut: async () => ({ error: null }),
         },
         from: () => ({

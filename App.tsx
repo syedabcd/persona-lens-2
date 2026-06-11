@@ -243,7 +243,10 @@ const App: React.FC = () => {
       });
   };
 
-  if (view === 'admin') {
+  const isAppRoute = location.pathname.startsWith('/app');
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.hash === '#admin';
+
+  if (isAdminRoute) {
       return <AdminPanel onLogout={() => { window.location.href = '/'; }} />;
   }
 
@@ -258,84 +261,90 @@ const App: React.FC = () => {
            <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] rounded-full blur-[100px] animate-blob delay-700 bg-fuchsia-900/20"></div>
         </div>
 
-        {/* Dynamic Navbar based on view */}
-        {view === 'input' || view === 'report' || view === 'monitoring' || view === 'profile' ? (
-             <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
-        ) : null}
+        {isAppRoute && (
+          <>
+            {/* Dynamic Navbar based on view */}
+            {view === 'input' || view === 'report' || view === 'monitoring' || view === 'profile' ? (
+                 <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
+            ) : null}
 
-        <div className="relative z-10 w-full min-h-screen pt-20 pb-10 px-4 md:px-6">
-          
-          {view === 'auth' && (
-             <div className="max-w-md mx-auto pt-10">
-                 <AuthPage onAuthSuccess={handleAuthSuccess} />
-             </div>
-          )}
+            <div className="relative z-10 w-full min-h-screen pt-20 pb-10 px-4 md:px-6">
+              
+              {view === 'auth' && (
+                 <div className="max-w-md mx-auto pt-10">
+                     <AuthPage onAuthSuccess={handleAuthSuccess} />
+                 </div>
+              )}
 
-          {view === 'input' && (
-             <InputSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} onBack={() => { window.location.href = '/'; }} />
-          )}
+              {view === 'input' && (
+                 <InputSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} onBack={() => { window.location.href = '/'; }} />
+              )}
 
-          {view === 'report' && (
-             <>
-                {report && (
-                    <ReportView 
-                        report={report} 
-                        language={resultLanguage}
-                        onChatClick={() => setIsChatOpen(true)}
-                        onSimulateClick={() => setIsSimulatorOpen(true)}
-                        onVigilanceClick={addToMonitoring}
-                    />
-                )}
-                {segmentationReport && (
-                    <SegmentationView report={segmentationReport} />
-                )}
-                {compatibilityReport && (
-                    <CompatibilityView report={compatibilityReport} />
-                )}
+              {view === 'report' && (
+                 <>
+                    {report && (
+                        <ReportView 
+                            report={report} 
+                            language={resultLanguage}
+                            onChatClick={() => setIsChatOpen(true)}
+                            onSimulateClick={() => setIsSimulatorOpen(true)}
+                            onVigilanceClick={addToMonitoring}
+                        />
+                    )}
+                    {segmentationReport && (
+                        <SegmentationView report={segmentationReport} />
+                    )}
+                    {compatibilityReport && (
+                        <CompatibilityView report={compatibilityReport} />
+                    )}
 
-                {/* Overlays */}
-                {isChatOpen && report && (
-                    <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
-                )}
-                {isSimulatorOpen && report && (
-                    <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
-                )}
-             </>
-          )}
+                    {/* Overlays */}
+                    {isChatOpen && report && (
+                        <ChatInterface report={report} onClose={() => setIsChatOpen(false)} />
+                    )}
+                    {isSimulatorOpen && report && (
+                        <SimulatorInterface report={report} onClose={() => setIsSimulatorOpen(false)} />
+                    )}
+                 </>
+              )}
 
-          {view === 'monitoring' && (
-              <MonitoringView profiles={monitoredProfiles} />
-          )}
+              {view === 'monitoring' && (
+                  <MonitoringView profiles={monitoredProfiles} />
+              )}
 
-          {view === 'profile' && session && (
-              <ProfileView session={session} onLogout={handleLogout} />
-          )}
-          
-          {/* History Mode (Accessible via Tab) */}
-          {activeTab === 'history' && view !== 'history' && (
-               // Simple overlay or switch view for history
-               <div className="fixed inset-0 z-40 bg-[#020617] pt-24 px-4 overflow-y-auto">
-                   <div className="max-w-3xl mx-auto">
-                        <button onClick={() => setActiveTab('home')} className="mb-4 text-slate-400 hover:text-white">← Back</button>
-                        {session?.user && (
-                            <HistoryView userId={session.user.id} onSelectReport={handleSelectHistory} />
-                        )}
+              {view === 'profile' && session && (
+                  <ProfileView session={session} onLogout={handleLogout} />
+              )}
+              
+              {/* History Mode (Accessible via Tab) */}
+              {activeTab === 'history' && view !== 'history' && (
+                   // Simple overlay or switch view for history
+                   <div className="fixed inset-0 z-40 bg-[#020617] pt-24 px-4 overflow-y-auto">
+                       <div className="max-w-3xl mx-auto">
+                            <button onClick={() => setActiveTab('home')} className="mb-4 text-slate-400 hover:text-white">← Back</button>
+                            {session?.user && (
+                                <HistoryView userId={session.user.id} onSelectReport={handleSelectHistory} />
+                            )}
+                       </div>
                    </div>
-               </div>
-          )}
+              )}
 
+            </div>
+          </>
+        )}
+
+        <div className="relative z-10">
+          <Routes>
+              <Route path="/" element={<LandingRoute />} />
+              <Route path="/about" element={<BlogLayout><AboutPage /></BlogLayout>} />
+              {/* The main app logic is rendered above when path starts with /app */}
+              <Route path="/app/*" element={<div />} /> 
+              <Route path="/admin/*" element={<div />} /> 
+              <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
+              <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />
+              <Route path="*" element={<LandingRoute />} />
+          </Routes>
         </div>
-
-        <Routes>
-            <Route path="/" element={<LandingRoute />} />
-            <Route path="/about" element={<BlogLayout><AboutPage /></BlogLayout>} />
-            {/* The main app logic is rendered above based on state, but we need routes for static pages */}
-            {/* /app route is handled by the component rendering above, technically these routes are just for URL structure if needed */}
-            <Route path="/app/*" element={<div />} /> 
-            <Route path="/blog" element={<BlogLayout><BlogIndex /></BlogLayout>} />
-            <Route path="/blog/:slug" element={<BlogLayout><BlogPostView /></BlogLayout>} />
-            <Route path="*" element={<LandingRoute />} />
-        </Routes>
       </div>
     </>
   );
