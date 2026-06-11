@@ -195,13 +195,13 @@ export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> =>
         const { data, error } = await supabase
             .from('posts')
             .select('*')
-            .eq('slug', slug)
-            .single();
+            .ilike('slug', slug)
+            .limit(1);
 
-        if (error || !data) {
+        if (error || !data || data.length === 0) {
              return staticPost || null;
         }
-        return data;
+        return data[0];
     } catch (e) {
          return staticPost || null;
     }
