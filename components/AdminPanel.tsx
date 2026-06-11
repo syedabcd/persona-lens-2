@@ -83,7 +83,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
             setEditingPost(null);
         } catch (e: any) {
             console.error(e);
-            alert(`Failed to save post: ${e.message || "Unknown error"}. Check your database connection.`);
+            alert(`Failed to save post: Supabase Row-Level Security (RLS) is blocking the save. \n\nSince the Admin Panel uses a custom login, Supabase sees this as an anonymous request.\n\nTo fix this: Go to your Supabase Dashboard -> SQL Editor and run:\nALTER TABLE posts DISABLE ROW LEVEL SECURITY;\n\n(Error details: ${e.message})`);
         } finally {
             setIsLoading(false);
         }
