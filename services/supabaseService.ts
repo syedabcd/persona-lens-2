@@ -186,8 +186,9 @@ export const fetchBlogPosts = async (): Promise<BlogPost[]> => {
 };
 
 export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> => {
+    const cleanSlug = slug.trim();
     // Check static first for instant load/fallback
-    const staticPost = STATIC_BLOG_POSTS.find(p => p.slug === slug);
+    const staticPost = STATIC_BLOG_POSTS.find(p => p.slug === cleanSlug);
 
     try {
         if (!supabaseUrl || !supabaseKey) return staticPost || null;
@@ -195,10 +196,14 @@ export const fetchPostBySlug = async (slug: string): Promise<BlogPost | null> =>
         const { data, error } = await supabase
             .from('posts')
             .select('*')
-            .ilike('slug', slug)
+            .eq('slug', cleanSlug)
             .limit(1);
 
         if (error || !data || data.length === 0) {
+             // Fallback: fetch all and find (handles case/spacing issues that .eq might miss)
+             const allPosts = await fetchBlogPosts();
+             const found = allPosts.find(p => p.slug?.trim().toLowerCase() === cleanSlug.toLowerCase());
+             if (found) return found;
              return staticPost || null;
         }
         return data[0];
