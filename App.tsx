@@ -21,7 +21,7 @@ import BlogPostView from './components/BlogPost';
 import AboutPage from './components/AboutPage';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
-import { supabase, saveHistory } from './services/supabaseService';
+import { supabase, saveHistory, deductCredits } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
 type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
@@ -119,6 +119,11 @@ const App: React.FC = () => {
     setResultLanguage(data.language); 
 
     try {
+      // Deduct 1 credit for running an analysis
+      if (session?.user) {
+          await deductCredits(session.user.id, session.user.email || '', 1);
+      }
+
       let resultReport: any = null;
       let summary = "";
       let title = "";

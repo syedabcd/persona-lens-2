@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Sparkles, Zap, Brain, X, ArrowRight, ArrowLeft, Briefcase, HeartHandshake, FileText, Loader2, Terminal, Image as ImageIcon, Globe, CheckCircle, AlertCircle, Trash2, Languages } from 'lucide-react';
 import { FormData, FileData, AnalysisMode, SocialProfile } from '../types';
 import { scrapePublicProfile } from '../services/scrapingService';
+import { supabase, getUserProfile, deductCredits } from '../services/supabaseService';
 
 interface InputSectionProps {
   onAnalyze: (data: FormData, files: FileData[], mode: AnalysisMode) => void;
@@ -200,16 +201,32 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
       setIsScraping(true);
       setScrapeError(null);
       try {
+          // Check for credits first (requires 2 credits)
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+              const profile = await getUserProfile(session.user.id, session.user.email || '');
+              if (profile.credits < 2) {
+                  setScrapeError(`Insufficient credits. Profile scraping costs 2 credits, but you only have ${profile.credits} left.`);
+                  setIsScraping(false);
+                  return;
+              }
+          }
+
           const result = await scrapePublicProfile(scrapePlatform, scrapeUsername);
           if (result.success && result.data) {
+              // Deduct 2 credits upon successful social scraping
+              if (session?.user) {
+                  await deductCredits(session.user.id, session.user.email || '', 2);
+              }
               // Add to the list of profiles instead of replacing
               setScrapedProfiles(prev => [result.data!, ...prev]);
               setScrapeUsername(''); // Clear input for convenience
           } else {
               setScrapeError(result.error || "Failed to scrape profile. Ensure it is public.");
           }
-      } catch (e) {
-          setScrapeError("Unexpected error occurred.");
+      } catch (e: any) {
+          console.error(e);
+          setScrapeError(e.message || "Unexpected error occurred.");
       } finally {
           setIsScraping(false);
       }
