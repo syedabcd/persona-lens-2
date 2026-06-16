@@ -208,20 +208,23 @@ export const updateUserProfile = async (profile: UserProfile): Promise<UserProfi
     trackLocalUser(profile.id);
 
     try {
-        // Try to upsert into DB with all fields, including credits and tier
+        // Try to update into DB with all fields, including credits and tier
         const { data, error } = await supabase
             .from('profiles')
-            .upsert({
-                id: profile.id,
-                email: profile.email,
+            .update({
                 username: profile.username,
                 credits: profile.credits,
                 subscription_tier: profile.subscription_tier
             })
+            .eq('id', profile.id)
             .select()
             .single();
             
-        if (error) throw error;
+        if (error) {
+            // If it's a UUID error (e.g. seed user), just throw an innocuous error to fall back to local storage
+            if (error.code === '22P02') throw error; 
+            throw error;
+        }
         if (data) {
             localStorage.setItem(localKey, JSON.stringify(data));
             return data as UserProfile;
@@ -235,8 +238,14 @@ export const updateUserProfile = async (profile: UserProfile): Promise<UserProfi
         } else if (e.message?.includes("column") && e.message?.includes("does not exist")) {
              alert(`Failed to save profile: Missing columns in your Supabase 'profiles' table.\nPlease run this in your Supabase SQL Editor:\nALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits integer DEFAULT 5;\nALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_tier text DEFAULT 'Free';`);
              throw e;
-        } else if (e.code) {
-             throw e; // some other real database error should bubble up
+        } else if (e.code === '22P02') {
+             // Just a mock/seed user
+             console.warn("Ignoring UUID error for seed user");
+        } else {
+             // Only display an alert if we're connected to Supabase and it's a real unexpected error
+             if (supabaseUrl && supabaseKey) {
+                 console.error("Database update error: ", e);
+             }
         }
     }
 
@@ -256,6 +265,16 @@ export const deductCredits = async (userId: string, email: string, amount: numbe
     const updated = {
         ...profile,
         credits: profile.credits - amount
+    };
+    const saved = await updateUserProfile(updated);
+    return saved || updated;
+};
+
+export const addCredits = async (userId: string, email: string, amount: number): Promise<UserProfile> => {
+    const profile = await getUserProfile(userId, email);
+    const updated = {
+        ...profile,
+        credits: profile.credits + amount
     };
     const saved = await updateUserProfile(updated);
     return saved || updated;

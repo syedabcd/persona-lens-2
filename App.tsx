@@ -21,7 +21,7 @@ import BlogPostView from './components/BlogPost';
 import AboutPage from './components/AboutPage';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
-import { supabase, saveHistory, deductCredits, getUserProfile } from './services/supabaseService';
+import { supabase, saveHistory, deductCredits, addCredits, getUserProfile } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
 type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
@@ -211,7 +211,22 @@ const App: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
       console.error("Analysis Error:", error);
-      alert(error.message || "Something went wrong during analysis. Please try again.");
+      let errorMessage = error.message || "Something went wrong during analysis. Please try again.";
+      if (errorMessage.includes("429") || errorMessage.includes("Quota exceeded") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+          errorMessage = "The AI service is currently overwhelmed or out of quota. Please try again later or check your API key.";
+      }
+      
+      // Refund credits if analysis failed
+      if (session?.user) {
+          try {
+              const refundedProfile = await addCredits(session.user.id, session.user.email || '', 1);
+              setUserProfile(refundedProfile);
+          } catch (refundError) {
+              console.error("Failed to refund credit:", refundError);
+          }
+      }
+
+      alert(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }

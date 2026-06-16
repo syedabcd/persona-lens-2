@@ -1,11 +1,10 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { AnalysisReport, AnalysisMode, FileData, ProtocolPlan, SegmentationReport, CompatibilityReport, SimulationFeedback } from "../types";
-import { getGeminiKey } from "./configManager";
 
 // Helper to get fresh client instance
 const getAIClient = () => {
-    const key = getGeminiKey();
-    if (!key) throw new Error("Gemini API Key is missing. Please configure it in Settings.");
+    const key = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!key) throw new Error("Gemini API Key is missing. Please configure VITE_GEMINI_API_KEY in your environment variables.");
     return new GoogleGenAI({ apiKey: key });
 };
 
@@ -172,7 +171,7 @@ export const analyzePersona = async (
   `;
 
   // Use Pro for DEEP analysis, Flash for FAST
-  const modelName = mode === AnalysisMode.DEEP ? "gemini-3.1-pro-preview" : "gemini-3.1-flash-preview";
+  const modelName = mode === AnalysisMode.DEEP ? "gemini-1.5-pro" : "gemini-1.5-flash";
   const thinkingBudget = mode === AnalysisMode.DEEP ? 8192 : 0;
   
   const langInstruction = getLanguageInstruction(language);
@@ -241,7 +240,7 @@ export const analyzeClientSegmentation = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<SegmentationReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3.1-pro-preview"; // Use Pro for complex B2B logic
+  const modelName = "gemini-1.5-pro"; // Use Pro for complex B2B logic
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -308,7 +307,7 @@ export const analyzeCompatibility = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<CompatibilityReport> => {
   const ai = getAIClient();
-  const modelName = "gemini-3.1-pro-preview"; // Use Pro for complex compatibility reasoning
+  const modelName = "gemini-1.5-pro"; // Use Pro for complex compatibility reasoning
   const langInstruction = getLanguageInstruction(language);
   
   const prompt = `
@@ -369,7 +368,7 @@ export const generateActionPlan = async (
   language: 'english' | 'roman' = 'english'
 ): Promise<ProtocolPlan> => {
   const ai = getAIClient();
-  const modelName = "gemini-3.1-pro-preview"; // Use Pro for detailed planning
+  const modelName = "gemini-1.5-pro"; // Use Pro for detailed planning
   const langInstruction = getLanguageInstruction(language);
 
   const prompt = `
@@ -418,7 +417,7 @@ export const chatWithPersonaBot = async (
 ) => {
   const ai = getAIClient();
   // Chat can use Flash for responsiveness, no complex reasoning schema needed
-  const model = "gemini-3.1-flash-preview";
+  const model = "gemini-1.5-flash";
   const contextStr = reportContext ? JSON.stringify(reportContext) : "No specific profile loaded. Ask general strategic advice.";
 
   const systemInstruction = `
@@ -458,7 +457,7 @@ export const createSimulationChat = (
 ) => {
   const ai = getAIClient();
   // Simulation can use Flash for conversational speed
-  const model = "gemini-3.1-flash-preview";
+  const model = "gemini-1.5-flash";
   const contextStr = JSON.stringify(reportContext);
 
   const systemInstruction = `
@@ -496,7 +495,7 @@ export const evaluateSimulation = async (
 ): Promise<SimulationFeedback> => {
   const ai = getAIClient();
   // Evaluation requires reasoning
-  const modelName = "gemini-3.1-pro-preview";
+  const modelName = "gemini-1.5-pro";
 
   const prompt = `
     Analyze the following roleplay transcript between the User and the Target.

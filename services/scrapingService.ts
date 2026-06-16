@@ -1,5 +1,4 @@
 import { SocialProfile } from "../types";
-import { getScrapeKey } from "./configManager";
 
 const BASE_URL = "https://api.scrapecreators.com/v1";
 
@@ -226,8 +225,8 @@ export const scrapePublicProfile = async (platform: string, profileUrlOrUser: st
         return { success: false, error: "Invalid username format." };
     }
 
-    // Get API Key via Manager
-    const apiKey = getScrapeKey();
+    // Get API Key from environment
+    const apiKey = import.meta.env.VITE_SCRAPE_API_KEY;
 
     // Map platform to ScrapeCreators Endpoint
     let endpoint = "";

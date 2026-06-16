@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BlogPost, UserProfile } from '../types';
 import { fetchBlogPosts, upsertBlogPost, deleteBlogPost, getAllUserProfiles, adminUpdateUserProfile } from '../services/supabaseService';
-import { getStoredKeys, updateKeys } from '../services/configManager';
-import { Lock, Settings, Plus, Edit2, Trash2, Save, X, LogOut, Image, Key, AlertTriangle, Users, Award, Zap } from 'lucide-react';
+import { Lock, Plus, Edit2, Trash2, Save, X, LogOut, Image, AlertTriangle, Users, Award, Zap } from 'lucide-react';
 
 interface AdminPanelProps {
     onLogout: () => void;
@@ -12,7 +11,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [activeTab, setActiveTab] = useState<'blog' | 'users' | 'settings'>('blog');
+    const [activeTab, setActiveTab] = useState<'blog' | 'users'>('blog');
     
     // Blog State
     const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -24,9 +23,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
     const [editCredits, setEditCredits] = useState<number>(0);
     const [editTier, setEditTier] = useState<string>('Free');
-
-    // Settings State
-    const [apiKeys, setApiKeys] = useState({ gemini: '', scrape: '' });
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -45,9 +41,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
         } catch (e) {
             console.error("Failed to fetch user profiles:", e);
         }
-        
-        const keys = getStoredKeys();
-        setApiKeys(keys);
         
         setIsLoading(false);
     };
@@ -141,11 +134,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
         }
     };
 
-    const handleSaveSettings = () => {
-        updateKeys(apiKeys.gemini, apiKeys.scrape);
-        alert("API Keys Updated in Session Storage");
-    };
-
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
@@ -207,12 +195,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
                         >
                             Users & Credits
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('settings')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'settings' ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            Settings
                         </button>
                         <button onClick={onLogout} className="p-2 text-rose-500 hover:bg-rose-900/20 rounded-lg ml-4">
                             <LogOut size={18} />
@@ -611,52 +593,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                 )}
 
                 {/* SETTINGS TAB */}
-                {activeTab === 'settings' && (
-                    <div className="max-w-2xl mx-auto space-y-8">
-                        <div>
-                            <h2 className="text-2xl font-bold mb-2">API Configuration</h2>
-                            <p className="text-slate-400 text-sm">Update the API keys used by the application. These overrides are stored locally for this session.</p>
-                        </div>
-
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                            <div>
-                                <label className="flex items-center gap-2 text-sm font-bold text-violet-400 mb-2 uppercase tracking-wide">
-                                    <Key size={14} /> Gemini API Key
-                                </label>
-                                <input 
-                                    type="password"
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white font-mono text-sm focus:border-violet-500 outline-none"
-                                    placeholder="Enter AI Studio Key..."
-                                    value={apiKeys.gemini}
-                                    onChange={e => setApiKeys({...apiKeys, gemini: e.target.value})}
-                                />
-                                <p className="text-xs text-slate-500 mt-2">Required for analysis and chat features.</p>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-2 text-sm font-bold text-emerald-400 mb-2 uppercase tracking-wide">
-                                    <Key size={14} /> ScrapeCreators API Key
-                                </label>
-                                <input 
-                                    type="password"
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white font-mono text-sm focus:border-emerald-500 outline-none"
-                                    placeholder="Enter ScrapeCreators Key..."
-                                    value={apiKeys.scrape}
-                                    onChange={e => setApiKeys({...apiKeys, scrape: e.target.value})}
-                                />
-                                <p className="text-xs text-slate-500 mt-2">Required for social profile imports.</p>
-                            </div>
-
-                            <button 
-                                onClick={handleSaveSettings}
-                                className="w-full bg-violet-600 hover:bg-violet-500 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
-                            >
-                                <Save size={18} /> Save Configurations
-                            </button>
-                        </div>
-                    </div>
-                )}
-
             </div>
         </div>
     );
