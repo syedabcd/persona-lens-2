@@ -8,9 +8,10 @@ interface InputSectionProps {
   onAnalyze: (data: FormData, files: FileData[], mode: AnalysisMode) => void;
   isAnalyzing: boolean;
   onBack: () => void;
+  onCreditsUpdated?: (profile?: any) => void;
 }
 
-const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onBack }) => {
+const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onBack, onCreditsUpdated }) => {
   const [formData, setFormData] = useState<FormData>({
     relationship: '',
     purpose: '',
@@ -216,7 +217,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing, onB
           if (result.success && result.data) {
               // Deduct 2 credits upon successful social scraping
               if (session?.user) {
-                  await deductCredits(session.user.id, session.user.email || '', 2);
+                  const updatedProfile = await deductCredits(session.user.id, session.user.email || '', 2);
+                  if (onCreditsUpdated) onCreditsUpdated(updatedProfile);
               }
               // Add to the list of profiles instead of replacing
               setScrapedProfiles(prev => [result.data!, ...prev]);

@@ -21,7 +21,7 @@ import BlogPostView from './components/BlogPost';
 import AboutPage from './components/AboutPage';
 import { AnalysisReport, FormData, FileData, AnalysisMode, SegmentationReport, CompatibilityReport, MonitoredProfile, HistoryItem } from './types';
 import { analyzePersona, analyzeClientSegmentation, analyzeCompatibility } from './services/geminiService';
-import { supabase, saveHistory, deductCredits } from './services/supabaseService';
+import { supabase, saveHistory, deductCredits, getUserProfile } from './services/supabaseService';
 import { Session } from '@supabase/supabase-js';
 
 type ViewState = 'auth' | 'input' | 'report' | 'monitoring' | 'profile' | 'admin';
@@ -62,8 +62,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('auth');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // State for reports
+
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [segmentationReport, setSegmentationReport] = useState<SegmentationReport | null>(null);
   const [compatibilityReport, setCompatibilityReport] = useState<CompatibilityReport | null>(null);
@@ -84,9 +86,24 @@ const App: React.FC = () => {
         return;
     }
 
+    // Function to reload profile safely
+    const reloadProfile = async (currentSession: Session | null) => {
+        if (currentSession?.user) {
+            try {
+                const profile = await getUserProfile(currentSession.user.id, currentSession.user.email || '');
+                setUserProfile(profile);
+            } catch (e) {
+                console.error("Failed to load global profile", e);
+            }
+        } else {
+            setUserProfile(null);
+        }
+    };
+
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      reloadProfile(session);
       // If user is logged in, default to input view
       if (session && view === 'auth') {
         setView('input');
@@ -97,6 +114,7 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      reloadProfile(session);
       if (session && view === 'auth') {
         setView('input');
       }
@@ -106,6 +124,20 @@ const App: React.FC = () => {
         subscription.unsubscribe();
     };
   }, []);
+
+  // Update profile from any local changes (e.g. deductions)
+  const refreshGlobalProfile = async (newProfile?: any) => {
+      if (newProfile) {
+          setUserProfile(newProfile);
+          return;
+      }
+      if (session?.user) {
+          try {
+              const profile = await getUserProfile(session.user.id, session.user.email || '');
+              setUserProfile(profile);
+          } catch (e) {}
+      }
+  };
 
   const handleAuthSuccess = () => {
     setView('input');
@@ -121,7 +153,8 @@ const App: React.FC = () => {
     try {
       // Deduct 1 credit for running an analysis
       if (session?.user) {
-          await deductCredits(session.user.id, session.user.email || '', 1);
+          const updatedProfile = await deductCredits(session.user.id, session.user.email || '', 1);
+          setUserProfile(updatedProfile);
       }
 
       let resultReport: any = null;
@@ -204,6 +237,7 @@ const App: React.FC = () => {
 
   const handleNavbarClick = (tab: string) => {
     setActiveTab(tab);
+    refreshGlobalProfile();
     if (tab === 'home') {
        if (report || segmentationReport || compatibilityReport) {
          setView('report');
@@ -270,7 +304,7 @@ const App: React.FC = () => {
           <>
             {/* Dynamic Navbar based on view */}
             {view === 'input' || view === 'report' || view === 'monitoring' || view === 'profile' ? (
-                 <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} />
+                 <Navbar activeTab={activeTab} setActiveTab={handleNavbarClick} credits={userProfile?.credits} isPro={userProfile?.subscription_tier !== 'Free'} />
             ) : null}
 
             <div className="relative z-10 w-full min-h-screen pt-20 pb-10 px-4 md:px-6">
@@ -282,7 +316,12 @@ const App: React.FC = () => {
               )}
 
               {view === 'input' && (
-                 <InputSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} onBack={() => { window.location.href = '/'; }} />
+                 <InputSection 
+                     onAnalyze={handleAnalyze} 
+                     isAnalyzing={isAnalyzing} 
+                     onBack={() => { window.location.href = '/'; }} 
+                     onCreditsUpdated={refreshGlobalProfile}
+                 />
               )}
 
               {view === 'report' && (

@@ -9,8 +9,7 @@ interface ProfileViewProps {
   onLogout: () => void;
 }
 
-// Simple in-memory cache to prevent re-fetching on tab switches during the same session
-const profileCache: { [key: string]: UserProfile } = {};
+// Removed profile cache to ensure real-time credit updates
 
 const ProfileSkeleton = () => (
     <div className="w-full max-w-xl mx-auto pb-40 animate-pulse">
@@ -56,21 +55,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
 
   const loadProfile = useCallback(async () => {
     if (!session.user) return;
-    
-    // 1. Check Cache first for instant load
-    if (profileCache[session.user.id]) {
-        setProfile(profileCache[session.user.id]);
-        setEditUsername(profileCache[session.user.id].username);
-        setLoading(false);
-        return; // Return early if we have data, but maybe trigger a background refresh if needed
-    }
-
     try {
         const data = await getUserProfile(session.user.id, session.user.email || '');
-        
         if (isMounted.current) {
-            // Update Cache
-            profileCache[session.user.id] = data;
             setProfile(data);
             setEditUsername(data.username);
         }
@@ -112,8 +99,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ session, onLogout }) => {
         const result = await updateUserProfile(updated);
         
         if (result && isMounted.current) {
-            // Update Cache
-            profileCache[session.user.id] = result;
             setProfile(result);
             setIsEditing(false);
         }

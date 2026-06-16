@@ -136,6 +136,20 @@ export const getUserProfile = async (userId: string, email: string): Promise<Use
             .single();
 
         if (data && !error) {
+            // Merge with local storage if it exists, so we don't lose local credit if column is missing
+            try {
+                const cached = localStorage.getItem(localKey);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (data.credits === undefined || data.credits === null) {
+                        data.credits = parsed.credits;
+                    }
+                    if (data.subscription_tier === undefined || data.subscription_tier === null) {
+                        data.subscription_tier = parsed.subscription_tier;
+                    }
+                }
+            } catch (e) {}
+
             // Store a copy in localStorage for local fallback syncing
             localStorage.setItem(localKey, JSON.stringify(data));
             return data as UserProfile;
@@ -194,13 +208,13 @@ export const updateUserProfile = async (profile: UserProfile): Promise<UserProfi
     trackLocalUser(profile.id);
 
     try {
-        // Try to update/insert into DB with all fields, including credits and tier
+        // Try to upsert into DB with all fields, including credits and tier
         const { data, error } = await supabase
             .from('profiles')
             .upsert({
                 id: profile.id,
-                username: profile.username,
                 email: profile.email,
+                username: profile.username,
                 credits: profile.credits,
                 subscription_tier: profile.subscription_tier
             })
@@ -212,11 +226,21 @@ export const updateUserProfile = async (profile: UserProfile): Promise<UserProfi
             localStorage.setItem(localKey, JSON.stringify(data));
             return data as UserProfile;
         }
-    } catch (e) {
-        console.warn("Profile update simulated (DB might be missing profiles table or columns).", e);
+    } catch (e: any) {
+        console.warn("Profile update failed.", e);
+        // Special case: if it's a clearly understood configuration error, alert directly
+        if (e.message?.includes("Row-Level") || e.code === '42501' || e.code === 'PGRST116') {
+             alert(`Failed to save profile: Supabase Row-Level Security (RLS) is blocking the save. \nPlease run this in your Supabase SQL Editor:\nALTER TABLE profiles DISABLE ROW LEVEL SECURITY;`);
+             throw e;
+        } else if (e.message?.includes("column") && e.message?.includes("does not exist")) {
+             alert(`Failed to save profile: Missing columns in your Supabase 'profiles' table.\nPlease run this in your Supabase SQL Editor:\nALTER TABLE profiles ADD COLUMN IF NOT EXISTS credits integer DEFAULT 5;\nALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_tier text DEFAULT 'Free';`);
+             throw e;
+        } else if (e.code) {
+             throw e; // some other real database error should bubble up
+        }
     }
 
-    // Update locally in fallback
+    // Fallback path (only for local-only non-connected scenarios)
     try {
         localStorage.setItem(localKey, JSON.stringify(profile));
     } catch (e) {}
@@ -247,7 +271,23 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
         
         if (error) throw error;
         if (data && data.length > 0) {
-            return data as UserProfile[];
+            const mergedData = data.map((dbProfile: any) => {
+                try {
+                    const localKey = `supabase_profile_${dbProfile.id}`;
+                    const cached = localStorage.getItem(localKey);
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (dbProfile.credits === undefined || dbProfile.credits === null) {
+                            dbProfile.credits = parsed.credits;
+                        }
+                        if (dbProfile.subscription_tier === undefined || dbProfile.subscription_tier === null) {
+                            dbProfile.subscription_tier = parsed.subscription_tier;
+                        }
+                    }
+                } catch(e) {}
+                return dbProfile;
+            });
+            return mergedData as UserProfile[];
         }
     } catch (e) {
         console.warn("Could not query profiles list from DB.", e);
